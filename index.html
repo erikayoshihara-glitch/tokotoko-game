@@ -554,30 +554,21 @@ if(state===STATE.SOUND){
   const nx = x / canvas.width;
   const ny = y / canvas.height;
 
-  // ⭐音ありボタン
-  if(nx > 0.18 && nx < 0.82 && ny > 0.48 && ny < 0.62){
-
+  // ⭐音あり（少し下へ調整）
+  if(nx > 0.2 && nx < 0.8 && ny > 0.52 && ny < 0.68){
     soundOn = true;
     playBgm("bgm_common_intro.mp3");
-
-    state = STATE.COURSE;
-    return;
   }
 
-  // ⭐音なしボタン
-  if(nx > 0.18 && nx < 0.82 && ny > 0.64 && ny < 0.80){
-
+  // ⭐音なし（少し下へ調整）
+  else if(nx > 0.2 && nx < 0.8 && ny > 0.70 && ny < 0.86){
     soundOn = false;
     stopBgm();
-
-    state = STATE.COURSE;
-    return;
   }
-}
 
-
-
-  
+  state = STATE.COURSE;
+  return;
+} 
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
