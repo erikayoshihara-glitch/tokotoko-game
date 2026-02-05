@@ -276,6 +276,10 @@ const SE_SRC = {
 ========================================================= */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
+// ⭐ iPhoneタップ座標ズレ防止（これ追加）
+canvas.style.touchAction = "none";
+
 let groundY = canvas.height - 160;
 
 // ⭐スマホ縦横フィット（見切れ防止）
@@ -298,13 +302,12 @@ function fitCanvas(){
     baseH = 540;
   }
 
-    // Canvas内部サイズを変更
+  // Canvas内部サイズ
   canvas.width  = baseW;
   canvas.height = baseH;
 
-  // ⭐地面位置を端末ごとに変更（超重要）
+  // 地面位置
   groundY = canvas.height - (isMobile()?220:160);
-
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -312,13 +315,15 @@ function fitCanvas(){
   const scale = Math.min(vw/baseW, vh/baseH);
 
   if(isMobile()){
-  canvas.style.width  = "100vw";
-  canvas.style.height = "100vh";
-}else{
-  canvas.style.width  = (baseW * scale) + "px";
-  canvas.style.height = (baseH * scale) + "px";
+    canvas.style.width  = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+  }else{
+    canvas.style.width  = (baseW * scale) + "px";
+    canvas.style.height = (baseH * scale) + "px";
+  }
 }
-}
+
+
 
 
 
@@ -508,14 +513,19 @@ function getPointerXY(e){
 
   const rect = canvas.getBoundingClientRect();
 
+  // ⭐ iOS完全対応
   const scaleX = canvas.width  / rect.width;
   const scaleY = canvas.height / rect.height;
 
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top)  * scaleY;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  const x = (clientX - rect.left) * scaleX;
+  const y = (clientY - rect.top)  * scaleY;
 
   return {x,y};
 }
+
 
 
 function hitBtn(btn,x,y){
