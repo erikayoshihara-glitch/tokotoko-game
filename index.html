@@ -368,12 +368,24 @@ let audioCtx = null;
 
 
 function stopBgm(){
-  if(bgm){
+
+  if(!bgm) return;
+
+  try{
     bgm.pause();
     bgm.currentTime = 0;
-    bgm = null;
-  }
+
+    // ⭐ iPhone完全停止
+    bgm.src = "";
+    bgm.load();
+
+  }catch(e){}
+
+  bgm = null;
+  normalBgmSrc = null;
 }
+
+
 
 
 function playBgm(src){
@@ -437,19 +449,6 @@ function unlockAudioOnce(){
     b.play().catch(()=>{});
   }catch(e){}
 }
-
-
-
-
-  // 無音再生で解錠（失敗してもOK）
-  try{
-    const a = new Audio();
-    a.src = SE_SRC.jump;
-    a.volume = 0;
-    const p = a.play();
-    if(p && p.catch) p.catch(()=>{});
-    setTimeout(()=>{ a.pause(); }, 50);
-  }catch(e){}
 
 
 
@@ -989,6 +988,7 @@ function startGame(){
 
 /* 終了 */
 function finish(cleared){
+
   running = false;
   lastCleared = !!cleared;
 
@@ -1001,11 +1001,12 @@ function finish(cleared){
       ? RESULT_BGM[mode].clear
       : RESULT_BGM[mode].over;
 
-    const a = new Audio(bgmSrc);
-    a.volume = 0.7;
-    a.play().catch(()=>{});
+    playBgm(bgmSrc);
   }
+
 }
+
+
 
 
 /* 更新 */
