@@ -440,23 +440,24 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
-  // ⭐⭐⭐ iOS音声アンロック（これが無いと鳴らない）
+  // ⭐⭐⭐ iPhone音声アンロック
   try{
-    const a = new Audio(SE_SRC.jump);
-    a.volume = 0;
-    a.playsInline = true;
-    a.setAttribute("playsinline","");
-    a.setAttribute("webkit-playsinline","");
+    const unlock = new Audio("se_jump.mp3"); // ←必ず存在する音
+    unlock.volume = 0;
+    unlock.playsInline = true;
+    unlock.setAttribute("playsinline","");
+    unlock.setAttribute("webkit-playsinline","");
 
-    const p = a.play();
+    const p = unlock.play();
     if(p && p.catch) p.catch(()=>{});
 
     setTimeout(()=>{
-      a.pause();
-    },50);
+      unlock.pause();
+    },60);
 
   }catch(e){}
 }
+
 
 
 
@@ -504,13 +505,18 @@ a.volume = 0.85;
 ========================================================= */
 
 function getPointerXY(e){
+
   const rect = canvas.getBoundingClientRect();
 
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top)  * scaleY;
 
   return {x,y};
 }
+
 
 function hitBtn(btn,x,y){
   const nx = x / canvas.width;
