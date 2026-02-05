@@ -440,15 +440,25 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
+  // ⭐⭐⭐ iOS音声アンロック（これが無いと鳴らない）
   try{
     const a = new Audio(SE_SRC.jump);
     a.volume = 0;
     a.playsInline = true;
+    a.setAttribute("playsinline","");
+    a.setAttribute("webkit-playsinline","");
+
     const p = a.play();
     if(p && p.catch) p.catch(()=>{});
-    setTimeout(()=>{ a.pause(); },50);
+
+    setTimeout(()=>{
+      a.pause();
+    },50);
+
   }catch(e){}
 }
+
+
 
 
 
@@ -524,26 +534,12 @@ canvas.addEventListener("pointerdown",(e)=>{
 
 
   // ① 音あり / 音なし（左=音あり、右=音なし）
-  // ① 音あり / 音なし（左=音あり、右=音なし）
 if(state===STATE.SOUND){
 
   if(x < canvas.width/2){
-  soundOn = true;
-
-
-    // ⭐スマホ確定再生テスト
-    stopBgm();
+    soundOn = true;
 
     playBgm("bgm_common_intro.mp3");
-
-    bgm.loop = true;
-    bgm.volume = 0.6;
-    bgm.playsInline = true;
-    bgm.setAttribute("playsinline","");
-    bgm.setAttribute("webkit-playsinline","");
-
-    const p = bgm.play();
-    if(p && p.catch) p.catch(()=>{});
 
   }else{
     soundOn = false;
@@ -553,6 +549,7 @@ if(state===STATE.SOUND){
   state = STATE.COURSE;
   return;
 }
+
 
   
 
