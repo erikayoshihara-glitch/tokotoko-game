@@ -369,21 +369,33 @@ let audioCtx = null;
 
 function stopBgm(){
 
-  if(!bgm) return;
+  // ⭐通常BGM停止
+  if(bgm){
+    try{
+      bgm.pause();
+      bgm.currentTime = 0;
+      bgm.src = "";
+      bgm.removeAttribute("src");
+      bgm.load();
+    }catch(e){}
+  }
 
-  try{
-    bgm.pause();
-    bgm.currentTime = 0;
-
-    // ⭐ iPhone完全停止
-    bgm.src = "";
-    bgm.load();
-
-  }catch(e){}
+  // ⭐フィーバーBGMも停止（←これ超重要）
+  if(feverBgm){
+    try{
+      feverBgm.pause();
+      feverBgm.currentTime = 0;
+      feverBgm.src = "";
+      feverBgm.removeAttribute("src");
+      feverBgm.load();
+    }catch(e){}
+  }
 
   bgm = null;
+  feverBgm = null;
   normalBgmSrc = null;
 }
+
 
 
 
@@ -392,24 +404,14 @@ function playBgm(src){
 
   if(!soundOn) return;
 
-  // ⭐ 同じBGMなら再生成しない（スマホ安定）
-  if(bgm && normalBgmSrc === src) return;
+  // ⭐先に完全停止（多重再生防止の核）
+  stopBgm();
 
   normalBgmSrc = src;
 
-  // ⭐ iOS完全停止処理（超重要）
-  if(bgm){
-    try{
-      bgm.pause();
-      bgm.currentTime = 0;
-      bgm.src = "";
-      bgm.load();
-    }catch(e){}
-    bgm = null;
-  }
+  bgm = new Audio();
 
-  bgm = new Audio(src);
-
+  bgm.src = src;
   bgm.loop = true;
   bgm.volume = 0.6;
   bgm.preload = "auto";
@@ -419,8 +421,10 @@ function playBgm(src){
   bgm.setAttribute("webkit-playsinline","");
 
   const p = bgm.play();
-  if(p) p.catch(()=>{});
+  if(p && p.catch) p.catch(()=>{});
 }
+
+
 
 
 
@@ -546,6 +550,7 @@ canvas.addEventListener("pointerdown",(e)=>{
 
 
 
+
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
 
@@ -575,7 +580,6 @@ if(state===STATE.END){
     if(hitBtn(BTN.end_exit_sp,x,y)){
       state = STATE.COURSE;
       stopBgm();
-      if(soundOn) playBgm("bgm_common_intro.mp3");
       return;
     }
 
@@ -589,7 +593,6 @@ if(state===STATE.END){
     if(hitBtn(BTN.end_exit_pc,x,y)){
       state = STATE.COURSE;
       stopBgm();
-      if(soundOn) playBgm("bgm_common_intro.mp3");
       return;
     }
 
@@ -737,9 +740,8 @@ function startFever(){
   feverUntil = t + 5200;
   feverLayer.classList.add("show");
 
-  // ★ 通常BGMは playBgm が already 保存してるから何もしない
-
-  stopBgm();
+  // ⭐ここで stopBgm しない
+  // （playBgm が完全停止管理するから）
 
   if(soundOn){
     feverBgm = new Audio("bgm_fever.mp3");
@@ -753,9 +755,10 @@ function startFever(){
 
 
 
+
 function endFeverIfNeeded(){
 
-  if(!feverBgm) return; // ⭐ 追加（これが超重要）
+  if(!feverBgm) return;
 
   const t = performance.now();
 
@@ -769,12 +772,15 @@ function endFeverIfNeeded(){
       feverBgm = null;
     }
 
-    // ★ playBgm が normalBgmSrc を持ってる
+    // ⭐⭐⭐ これ追加（超重要）
+    stopBgm();
+
     if(normalBgmSrc){
       playBgm(normalBgmSrc);
     }
   }
 }
+
 
 
 /* スポーン */
@@ -984,6 +990,8 @@ function startGame(){
 function finish(cleared){
 
   running = false;
+  normalBgmSrc = null; // ⭐追加
+
   lastCleared = !!cleared;
 
   stopBgm();
