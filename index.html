@@ -313,8 +313,9 @@ function fitCanvas(){
   const scale = Math.min(vw/baseW, vh/baseH);
 
   if(isMobile()){
-  canvas.style.width  = "100vw";
-  canvas.style.height = "100vh";
+  canvas.style.width  = window.innerWidth + "px";
+　canvas.style.height = window.innerHeight + "px";
+
 }else{
   canvas.style.width  = (baseW * scale) + "px";
   canvas.style.height = (baseH * scale) + "px";
