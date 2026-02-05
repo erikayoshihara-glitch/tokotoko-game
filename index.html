@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<title>ミラまる＆チャーすけのEVエナジーラン</title>
+<style>
+html,body{
+margin:0;
+background:#fff;
+overflow:hidden;
+height:100dvh;
+
+/* ⭐中央固定（ここに入れる） */
+display:flex;
+align-items:center;
+justify-content:center;
+
+font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+
+canvas{
+display:block;
+margin:0;
+background:#fff;
+touch-action:manipulation;
+
+/* ⭐縦横どっちでも収まるサイズ */
+width:min(100vw, calc(100dvh * (960/540)));
+height:auto;
+}
+
+
+
+  /* ===== 演出 ===== */
+  .flash{
+    position:fixed; inset:0;
+    background:rgba(255,0,0,.28);
+    opacity:0; pointer-events:none;
+    transition:opacity .15s;
+    z-index:20;
+  }
+  .flash.show{ opacity:1; }
+
+  .fever{
+    position:fixed; inset:0;
+    opacity:0; pointer-events:none;
+    z-index:15;
+    background: linear-gradient(
+      120deg,
+      rgba(255,0,0,.24),
+      rgba(255,255,0,.22),
+      rgba(0,255,0,.20),
+      rgba(0,255,255,.20),
+      rgba(0,0,255,.20),
+      rgba(255,0,255,.22)
+    );
+    background-size: 300% 300%;
+    animation: rainbowMove 3.6s ease-in-out infinite;
+    transition: opacity .25s ease;
+  }
+  .fever.show{ opacity:1; }
+  @keyframes rainbowMove{
+    0%{ background-position:0% 50%; }
+    50%{ background-position:100% 50%; }
+    100%{ background-position:0% 50%; }
+  }
+
+  /* ===== HUD ===== */
+  .hud{
+    position:fixed; left:12px; top:12px;
+    display:none; gap:8px; flex-wrap:wrap;
+    z-index:25;
+    user-select:none;
+  }
+  .hud.show{ display:flex; }
+
+  .pill{
+    background:rgba(255,255,255,.86);
+    backdrop-filter: blur(4px);
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:999px;
+    padding:8px 10px;
+    font-size:13px;
+    font-weight:900;
+    color:#111;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tiny{ font-size:12px; color:#333; font-weight:900; }
+
+  .feverBadge{
+    display:none;
+    animation: pulse .8s ease-in-out infinite;
+  }
+  .feverBadge.on{ display:flex; }
+  @keyframes pulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+
+  .hp-pop{ animation: hpPop .28s ease; }
+  @keyframes hpPop{ 0%{transform:scale(1);} 50%{transform:scale(1.35);} 100%{transform:scale(1);} }
+
+  /* ローディング表示 */
+  .loading{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:#fff;
+    z-index:50;
+    color:#111;
+    font-weight:900;
+  }
+</style>
+</head>
+
+<body>
+<canvas id="game" width="960" height="540"></canvas>
+
+<div class="flash" id="damageFlash"></div>
+<div class="fever" id="feverLayer"></div>
+
+<div class="hud" id="hud">
+  <div class="pill">残り <span id="timeTxt">30.0</span>s</div>
+  <div class="pill">⚡ <span id="scoreTxt">0</span></div>
+  <div class="pill" id="hpPill">🔋 <span id="hpTxt">🔋🔋🔋</span></div>
+  <div class="pill tiny" id="statusTxt">状態：通常</div>
+  <div class="pill feverBadge" id="feverBadge">🌈 FEVER</div>
+</div>
+
+<div class="loading" id="loading">読み込み中…</div>
+
+<script>
+/* =========================================================
+  0) 状態（画面遷移）
+  音あり/なし → コース選択 → スタート → ゲーム → 結果
+========================================================= */
+const STATE = {
+  SOUND: "sound",
+  COURSE: "course",
+  START: "start",
+  GAME: "game",
+  END: "end"
+};
+
+// ⭐↓↓↓↓ ここに追加 ↓↓↓↓
+const BTN = {
+
+  // スマホ縦 END画面
+  end_retry_sp : { x1:0.2, x2:0.8, y1:0.55, y2:0.7 },
+  end_exit_sp  : { x1:0.2, x2:0.8, y1:0.72, y2:0.9 },
+
+  // PC横 END画面
+  end_retry_pc : { x1:140/960, x2:460/960, y1:340/540, y2:460/540 },
+  end_exit_pc  : { x1:500/960, x2:820/960, y1:340/540, y2:460/540 },
+
+};
+
+let state = STATE.SOUND;
+let soundOn = true;
+let mode = null; // "ch" | "mm"
+
+/* =========================================================
+  1) UI画像（ファイル名）
+========================================================= */
+const UI_SRC = {
+  sound:  "ui_sound_select.png",
+  sound_sp: "ui_sound_select_sp.png",
+
+  course: "ui_course_select.png",
+  course_sp: "ui_course_select_sp.png",
+
+  start:  "ui_start.png",
+  start_sp: "ui_start_sp.png",
+
+  clear:  "ui_game_clear.png",
+  clear_sp: "ui_game_clear_sp.png",
+
+  over:   "ui_game_over.png",
+  over_sp: "ui_game_over_sp.png"
+};
+
+const UI = {};
+
+/* =========================================================
+  2) ゲーム用アセット（画像）
+========================================================= */
+const ASSET = {
+  bg: "background.png",
+  bg_sp: "background_sp.png",
+  event_fever: "ch_event_fever.png",
+
+  // キャラ
+  ch_player: "ch_character.png",
+  mm_player: "mm_character.png",
+
+  // 共通（⚡）
+  lightning: "ch_item_lightning.png",
+  lightningBig: "ch_item_lightning_big.png",
+
+  // ch アイテム
+  ch_repair: "ch_item_repair.png",
+  ch_map: "ch_item_map.png",
+  ch_compass: "ch_item_compass.png",
+  ch_station: "ch_item_station.png",
+  ch_curry: "ch_item_curry.png",
+
+  // mm アイテム
+  mm_onigiri: "mm_item_onigiri.png",
+  mm_dango: "mm_item_dango.png",
+  mm_senbei: "mm_item_senbei.png",
+  mm_tea: "mm_item_tea.png",
+
+  // 敵
+  pitfall: "ch_enemy_pitfall.png",
+  construction: "ch_enemy_construction.png",
+  traffic: "ch_enemy_traffic.png",
+  trouble: "ch_enemy_trouble.png"
+};
+
+const MODE = {
+  ch: {
+    name: "🐶 チャーすけコース",
+    desc: "🛠/⛽で回復、🍛で加速、🗺で先読み、🧭で敵DOWN。30秒で⚡を集めよう！",
+    playerKey: "ch_player",
+    itemEvery: ["ch_repair","ch_map","ch_compass"],
+    itemRare5: ["ch_station","ch_curry"],
+    bgm: "bgm_ch_game.mp3"
+  },
+  mm: {
+    name: "🐱 ミラまるコース",
+    desc: "🍙で回復、🍡で加速、🍵で敵DOWN、🍘でダメージ無効1回。30秒で⚡を集めよう！",
+    playerKey: "mm_player",
+    itemEvery: ["mm_onigiri","mm_dango"],
+    itemRare5: ["mm_senbei","mm_tea"],
+    bgm: "bgm_mm_game.mp3"
+  }
+};
+const RESULT_BGM = {
+  ch: {
+    clear: "bgm_ch_clear.mp3",
+    over:  "bgm_ch_over.mp3"
+  },
+  mm: {
+    clear: "bgm_mm_clear.mp3",
+    over:  "bgm_mm_over.mp3"
+  }
+};
+
+
+/* =========================================================
+  3) 音源（SE）
+  ※あなたの指定をそのまま反映
+========================================================= */
+const SE_SRC = {
+  // 操作
+  jump: "se_jump.mp3",
+
+  // 取得
+  lightning: "se_get_lightning.mp3",                 // ⚡
+  itemCommon: "GB-Action01-09(Item).mp3",            // 🍙🍘🗺🧭 など
+  itemRare: "NES-Action01-12(Item).mp3",             // 🍛🍵
+  
+  // 被弾
+  hitConstruction: "SNES-Action01-13(Defeat).mp3",   // 工事中
+  hitPitfall: "GB-Action01-06(Miss).mp3",            // 穴
+  hitTraffic: "Car_Horn-Fake03-1.mp3",               // 🚗
+  hitTrouble: "SNES-Action01-13(Defeat).mp3",        // 💥（指定なしなので工事と同系統で）
+  
+  // 結果（指定がないので、必要なら差し替えてOK）
+  clear: "NES-Action01-12(Item).mp3",
+  gameover: "SNES-Action01-13(Defeat).mp3"
+};
+
+/* =========================================================
+  4) Canvas / DOM
+========================================================= */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let groundY = canvas.height - 160;
+
+// ⭐スマホ縦横フィット（見切れ防止）
+function isMobile(){
+  return window.innerWidth < 768;
+}
+
+function fitCanvas(){
+
+  let baseW;
+  let baseH;
+
+  // ⭐スマホは縦画面
+  if(isMobile()){
+    baseW = 540;
+    baseH = 960;
+  }else{
+    // ⭐PCは横画面
+    baseW = 960;
+    baseH = 540;
+  }
+
+    // Canvas内部サイズを変更
+  canvas.width  = baseW;
+  canvas.height = baseH;
+
+  // ⭐地面位置を端末ごとに変更（超重要）
+  groundY = canvas.height - (isMobile()?220:160);
+
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const scale = Math.min(vw/baseW, vh/baseH);
+
+  if(isMobile()){
+  canvas.style.width  = "100vw";
+  canvas.style.height = "100vh";
+}else{
+  canvas.style.width  = (baseW * scale) + "px";
+  canvas.style.height = (baseH * scale) + "px";
+}
+}
+
+
+
+
+window.addEventListener("resize", fitCanvas);
+window.addEventListener("orientationchange", fitCanvas);
+window.addEventListener("load", fitCanvas); // ←追加
+
+fitCanvas();
+
+
+const loadingEl = document.getElementById("loading");
+
+const hud         = document.getElementById("hud");
+const damageFlash = document.getElementById("damageFlash");
+const feverLayer  = document.getElementById("feverLayer");
+const feverBadge  = document.getElementById("feverBadge");
+
+const timeTxt   = document.getElementById("timeTxt");
+const scoreTxt  = document.getElementById("scoreTxt");
+const hpTxt     = document.getElementById("hpTxt");
+const hpPill    = document.getElementById("hpPill");
+const statusTxt = document.getElementById("statusTxt");
+
+/* =========================================================
+  5) 画像ロード
+========================================================= */
+function loadOneImage(src){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>resolve({ok:true, img});
+    img.onerror = ()=>resolve({ok:false, img:null});
+    img.src = src;
+  });
+}
+
+let I = {}; // game images
+
+/* =========================================================
+  6) 音（BGM/SE）
+========================================================= */
+let bgm = null;
+let feverBgm = null;
+let normalBgmSrc = null;
+let audioUnlocked = false;
+let audioCtx = null;
+
+
+function stopBgm(){
+  if(bgm){
+    bgm.pause();
+    bgm.currentTime = 0;
+    bgm = null;
+  }
+}
+
+
+function playBgm(src){
+
+  if(!soundOn) return;
+
+  // ⭐ 同じBGMなら再生成しない（スマホ安定）
+  if(bgm && normalBgmSrc === src) return;
+
+  normalBgmSrc = src;
+
+  // ⭐ iOS完全停止処理（超重要）
+  if(bgm){
+    try{
+      bgm.pause();
+      bgm.currentTime = 0;
+      bgm.src = "";
+      bgm.load();
+    }catch(e){}
+    bgm = null;
+  }
+
+  bgm = new Audio(src);
+
+  bgm.loop = true;
+  bgm.volume = 0.6;
+  bgm.preload = "auto";
+
+  bgm.playsInline = true;
+  bgm.setAttribute("playsinline","");
+  bgm.setAttribute("webkit-playsinline","");
+
+  const p = bgm.play();
+  if(p) p.catch(()=>{});
+}
+
+
+
+
+// iOS/Safari対策：最初のユーザー操作でアンロック
+function unlockAudioOnce(){
+  if(audioUnlocked) return;
+  audioUnlocked = true;
+
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  }catch(e){}
+
+  // SEアンロック
+  try{
+    const a = new Audio(SE_SRC.jump);
+    a.volume = 0;
+    a.play().catch(()=>{});
+  }catch(e){}
+
+  // BGMアンロック
+  try{
+    const b = new Audio("bgm_common_intro.mp3");
+    b.volume = 0;
+    b.play().catch(()=>{});
+  }catch(e){}
+}
+
+
+
+
+  // 無音再生で解錠（失敗してもOK）
+  try{
+    const a = new Audio();
+    a.src = SE_SRC.jump;
+    a.volume = 0;
+    const p = a.play();
+    if(p && p.catch) p.catch(()=>{});
+    setTimeout(()=>{ a.pause(); }, 50);
+  }catch(e){}
+
+
+
+// SEは多重再生できるようにcloneして鳴らす
+function inFeverNow(){
+  return performance.now() < feverUntil;
+}
+
+const sePool = {};
+
+function playSE(key){
+  if(!soundOn) return;
+
+  const src = SE_SRC[key];
+  if(!src) return;
+
+  // 初回だけ生成（超重要）
+  if(!sePool[key]){
+    sePool[key] = new Audio(src);
+  }
+
+  // cloneNode は超軽い
+  const a = sePool[key].cloneNode();
+
+  a.volume = 0.85;
+
+  // フィーバー中ピッチUP
+  if(inFeverNow()){
+    a.playbackRate = 1.25;
+  }
+
+  const p = a.play();
+  if(p && p.catch) p.catch(()=>{});
+}
+
+
+
+/* =========================================================
+  7) 入力（UIクリック座標 / ゲーム操作）
+========================================================= */
+
+function getPointerXY(e){
+  const rect = canvas.getBoundingClientRect();
+
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
+
+  return {x,y};
+}
+
+function hitBtn(btn,x,y){
+  const nx = x / canvas.width;
+  const ny = y / canvas.height;
+
+  return (
+    nx > btn.x1 &&
+    nx < btn.x2 &&
+    ny > btn.y1 &&
+    ny < btn.y2
+  );
+}
+
+
+document.addEventListener("touchstart", unlockAudioOnce, { once:true });
+document.addEventListener("pointerdown", unlockAudioOnce, { once:true });
+
+canvas.addEventListener("pointerdown",(e)=>{
+  e.preventDefault();
+  unlockAudioOnce();
+
+
+  const {x,y} = getPointerXY(e);
+
+
+
+  // ① 音あり / 音なし（左=音あり、右=音なし）
+  if(state===STATE.SOUND){
+    if(x < canvas.width/2){
+      soundOn = true;
+      playBgm("bgm_common_intro.mp3");
+    }else{
+      soundOn = false;
+      stopBgm();
+    }
+    state = STATE.COURSE;
+    return;
+  }
+
+  // ② コース選択（左=ミラまる、右=チャーすけ）
+  if(state===STATE.COURSE){
+
+  if(x < canvas.width/2){
+     mode = "mm";
+  }else{
+     mode = "ch";
+  }
+
+  state = STATE.START;
+  return;
+}
+
+
+
+  // ③ スタート（画像UI：中央のボタン範囲）
+  if(state===STATE.START){
+
+  // ★中央ボタン押したらゲーム開始
+  startGame();
+  return;
+}
+
+
+
+  // ④ ゲーム中：ジャンプ
+  if(state===STATE.GAME){
+    jump();
+    return;
+  }
+
+  // ⑤ 終了画面：もう一度 / やめる
+if(state===STATE.END){
+
+  if(isMobile()){
+
+    if(hitBtn(BTN.end_retry_sp,x,y)){
+      startGame();
+      return;
+    }
+
+    if(hitBtn(BTN.end_exit_sp,x,y)){
+      state = STATE.COURSE;
+      stopBgm();
+      if(soundOn) playBgm("bgm_common_intro.mp3");
+      return;
+    }
+
+  }else{
+
+    if(hitBtn(BTN.end_retry_pc,x,y)){
+      startGame();
+      return;
+    }
+
+    if(hitBtn(BTN.end_exit_pc,x,y)){
+      state = STATE.COURSE;
+      stopBgm();
+      if(soundOn) playBgm("bgm_common_intro.mp3");
+      return;
+    }
+
+  }
+}
+
+
+
+
+});
+
+document.addEventListener("keydown",(e)=>{
+  if(e.code==="Space"){
+    e.preventDefault();
+    unlockAudioOnce();
+    if(state===STATE.GAME) jump();
+    if(state===STATE.START) startGame();
+    if(state===STATE.END) startGame();
+  }
+});
+
+/* =========================================================
+  8) ゲーム本体（あなたの既存仕様を維持）
+========================================================= */
+const GAME_MS = 30_000;
+
+
+const gravity   = 1.35;
+const jumpPower = -22;
+const BASE_SPEED = 8;
+
+const PLAYER_W = 80;
+const PLAYER_H = 80;
+
+let running = false;
+let startAt = 0;
+let lastCleared = false;
+
+let playCount = 0;        // モード別：localStorage
+let gameEvent = null;     // このゲームのレア枠
+let used = null;
+
+let player = {};
+let score = 0;
+let hp = 3;
+
+let lightnings = [];
+let items = [];
+let enemies = [];
+
+let lastSpawn = 0;
+let spawnCount = 0;
+
+let feverCount = 0;
+let feverUntil = 0;
+
+let speedUntil = 0;
+let slowUntil  = 0;
+let enemyRateDownUntil = 0;
+let mapRevealUntil = 0;
+
+let shakeUntil = 0;
+let sinkUntil  = 0;
+let starsUntil = 0;
+let starsAngle = 0;
+
+let popups = [];
+let comment = { text:"", until:0 };
+
+let shieldUntilHit = false; // mm専用🍘
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+/* 当たり判定（安定版） */
+function hit(a, b){
+  const marginA = 14;
+  const marginB = 10;
+  return (
+    a.x + marginA < b.x + b.w - marginB &&
+    a.x + a.w - marginA > b.x + marginB &&
+    a.y + marginA < b.y + b.h - marginB &&
+    a.y + a.h - marginA > b.y + marginB
+  );
+}
+
+/* HUD */
+function updateHUD(remainMs){
+  timeTxt.textContent = (remainMs/1000).toFixed(1);
+  scoreTxt.textContent = score;
+  hpTxt.textContent = "🔋".repeat(hp) + "▫️".repeat(3-hp);
+}
+
+function flashDamage(){
+  damageFlash.classList.add("show");
+  setTimeout(()=>damageFlash.classList.remove("show"), 120);
+}
+
+function popHP(){
+  hpPill.classList.add("hp-pop");
+  setTimeout(()=>hpPill.classList.remove("hp-pop"), 280);
+}
+
+function say(text, duration=1200){
+  comment.text = text;
+  comment.until = performance.now() + duration;
+}
+
+function setStatus(){
+  const t = performance.now();
+  const parts = [];
+  if(t < feverUntil) parts.push("フィーバー");
+  if(t < mapRevealUntil) parts.push("先読み");
+  if(t < enemyRateDownUntil) parts.push("敵DOWN");
+  if(t < speedUntil) parts.push("SPEED+");
+  if(t < slowUntil)  parts.push("SPEED-");
+  if(mode==="mm" && shieldUntilHit) parts.push("🍘ガード");
+  statusTxt.textContent = "状態：" + (parts.length ? parts.join(" / ") : "通常");
+  feverBadge.classList.toggle("on", t < feverUntil);
+}
+
+/* ゲーム回数（モード別） */
+function storageKeyForCount(){
+  return mode === "ch" ? "evrun_playCount_ch" : "evrun_playCount_mm";
+}
+function loadPlayCount(){
+  const raw = localStorage.getItem(storageKeyForCount());
+  const n = raw ? parseInt(raw,10) : 0;
+  return Number.isFinite(n) ? n : 0;
+}
+function savePlayCount(n){
+  localStorage.setItem(storageKeyForCount(), String(n));
+}
+function decideGameEvent(){
+  const fever = (playCount % 15 === 0);              // 15ゲームに1回
+  const bigLightning = (!fever && playCount % 10 === 0); // 10ゲームに1回
+  const rare5 = (!fever && playCount % 5 === 0);     // 5ゲームに1回（モードのレア枠）
+  return { fever, bigLightning, rare5 };
+}
+
+/* フィーバー */
+function startFever(){
+
+  const t = performance.now();
+
+  feverUntil = t + 5200;
+  feverLayer.classList.add("show");
+
+  // ★ 通常BGMは playBgm が already 保存してるから何もしない
+
+  stopBgm();
+
+  if(soundOn){
+    feverBgm = new Audio("bgm_fever.mp3");
+    feverBgm.loop = true;
+    feverBgm.volume = 0.7;
+    feverBgm.play().catch(()=>{});
+  }
+
+  say("🌈 フィーバー突入！",1100);
+}
+
+
+
+function endFeverIfNeeded(){
+
+  if(!feverBgm) return; // ⭐ 追加（これが超重要）
+
+  const t = performance.now();
+
+  if(t >= feverUntil){
+
+    feverLayer.classList.remove("show");
+
+    if(feverBgm){
+      feverBgm.pause();
+      feverBgm.currentTime = 0;
+      feverBgm = null;
+    }
+
+    // ★ playBgm が normalBgmSrc を持ってる
+    if(normalBgmSrc){
+      playBgm(normalBgmSrc);
+    }
+  }
+}
+
+
+/* スポーン */
+function makeLightning(){
+  return { kind:"lightning", x: canvas.width, y: groundY - 60 - Math.random()*120, w:50, h:50 };
+}
+function makeItem(key){
+  let y = groundY - 60 - Math.random()*120;
+  if(key === "ch_station") y = groundY + 10;
+  if(key === "lightningBig") y = groundY - 110;
+  if(key === "ch_repair" || key === "mm_onigiri") y = groundY - 40;
+  return { type:"item", key, x: canvas.width, y, w:(key==="lightningBig")?64:56, h:(key==="lightningBig")?64:56 };
+}
+function makeEnemyByRule(){
+  const yJitter = Math.random()*12;
+  let kind;
+  if(spawnCount % 5 === 0) kind = "trouble";
+  else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
+  else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
+  return { type:"enemy", kind, x: canvas.width, y: (groundY + 20) - yJitter, w:70, h:70, rot:0 };
+}
+
+/* このゲームのレア枠を「1回ずつ」消化 */
+function trySpawnPlannedEvent(){
+  if(spawnCount < 6) return false;
+
+  const t = performance.now();
+
+  // フィーバーアイテム（このゲーム1回）
+  if(gameEvent.fever && !used.fever){
+    items.push({
+      type:"item",
+      key:"event_fever",
+      x: canvas.width,
+      y: groundY - 120,
+      w: 64,
+      h: 64
+    });
+    used.fever = true;
+    say("🌈 何か特別なものが…？",1000);
+    return true;
+  }
+
+  if(t < feverUntil) return false;
+
+  // 大⚡（10回に1回：このゲームで1回）
+  if(gameEvent.bigLightning && !used.bigLightning){
+    items.push(makeItem("lightningBig"));
+    used.bigLightning = true;
+    say("たまに大⚡きた！🎉", 1000);
+    return true;
+  }
+
+  // 5回に1回枠（モード別）
+  if(gameEvent.rare5 && !used.rare5){
+    const rareKeys = MODE[mode].itemRare5;
+    const pick = rareKeys[(playCount/5|0) % rareKeys.length];
+    items.push(makeItem(pick));
+    used.rare5 = true;
+
+    if(mode==="ch"){
+      if(pick==="ch_curry") say("今回は🍛来た！", 1000);
+      else if(pick==="ch_station") say("今回は⛽来た！", 1000);
+      else say("今日はレア！", 900);
+    }else{
+      if(pick==="mm_senbei") say("今回は🍘来た！", 1000);
+      else if(pick==="mm_tea") say("今回は🍵来た！", 1000);
+      else say("今日はレア！", 900);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function spawn(){
+  const now = Date.now();
+  const t = performance.now();
+  const inFever = (t < feverUntil);
+
+  const interval = inFever ? 420 : 1200;
+  if(now - lastSpawn < interval) return;
+  lastSpawn = now;
+
+  spawnCount++;
+
+  // まず「このゲームの予定」を出す
+  if(trySpawnPlannedEvent()) return;
+
+  // フィーバー中：敵なし＆⚡大量
+  if(inFever){
+    lightnings.push(makeLightning());
+    if(Math.random() < 0.35) lightnings.push(makeLightning());
+    return;
+  }
+
+  // 通常：敵 or アイテム or ⚡
+  const enemyChanceBase = 0.52;
+  const enemyChance = (t < enemyRateDownUntil) ? 0.30 : enemyChanceBase;
+
+  if(Math.random() < enemyChance){
+    enemies.push(makeEnemyByRule());
+  }else{
+    const r = Math.random();
+    const every = MODE[mode].itemEvery;
+
+    if(mode==="ch"){
+      // ch：毎回枠もちゃんと出る（稲妻だけにならない）
+      if(r < 0.16) items.push(makeItem(every[0]));         // 🛠
+      else if(r < 0.28) items.push(makeItem(every[1]));    // 🗺
+      else if(r < 0.40) items.push(makeItem(every[2]));    // 🧭
+      else if(r < 0.88) lightnings.push(makeLightning());  // ⚡
+      else lightnings.push(makeLightning());
+    }else{
+      // mm：🍙/🍡を拾って楽しむ比率高め
+      if(r < 0.22) items.push(makeItem(every[0]));         // 🍙
+      else if(r < 0.44) items.push(makeItem(every[1]));    // 🍡
+      else if(r < 0.92) lightnings.push(makeLightning());  // ⚡
+      else lightnings.push(makeLightning());
+    }
+  }
+}
+
+/* 操作 */
+function jump(){
+  if(!running) return;
+  // 地面ピッタリでのみジャンプ（ズレ防止：地面に吸着してるので == でOK）
+  if(player.y === groundY){
+    player.vy = jumpPower;
+    playSE("jump");
+  }
+}
+
+/* 初期化 */
+function resetGameCore(){
+  running = false;
+  startAt = 0;
+
+  player = { x:150, y:groundY, w:PLAYER_W, h:PLAYER_H, vy:0 };
+  score = 0;
+  hp = 3;
+
+  lightnings = [];
+  items = [];
+  enemies = [];
+
+  lastSpawn = 0;
+  spawnCount = 0;
+
+  feverCount = 0;
+  feverUntil = 0;
+
+  speedUntil = 0;
+  slowUntil  = 0;
+  enemyRateDownUntil = 0;
+  mapRevealUntil = 0;
+
+  shakeUntil = 0;
+  sinkUntil  = 0;
+  starsUntil = 0;
+  starsAngle = 0;
+
+  popups = [];
+  comment = { text:"", until:0 };
+
+  shieldUntilHit = false;
+
+  used = { fever:false, bigLightning:false, rare5:false };
+  feverLayer.classList.remove("show");
+  feverBadge.classList.remove("on");
+  statusTxt.textContent = "状態：通常";
+  updateHUD(GAME_MS);
+}
+
+/* 開始 */
+function startGame(){
+  if(!mode) mode = "ch";
+
+
+
+  state = STATE.GAME;
+  hud.classList.add("show");
+
+  playCount = loadPlayCount() + 1;
+  savePlayCount(playCount);
+
+  gameEvent = decideGameEvent();
+  resetGameCore();
+
+  stopBgm();
+  playBgm(MODE[mode].bgm);
+
+  if(gameEvent.fever) say("今日は…特別な予感！", 1000);
+  else if(gameEvent.bigLightning) say("たまに大⚡くるかも！", 1000);
+  else if(gameEvent.rare5){
+    if(mode==="ch") say("次は⛽か🍛かも？", 1000);
+    else say("次は🍘か🍵かも？", 1000);
+  }else{
+    say("いくよー！", 900);
+  }
+
+  running = true;
+  startAt = Date.now();
+}
+
+/* 終了 */
+function finish(cleared){
+  running = false;
+  lastCleared = !!cleared;
+
+  stopBgm();
+  hud.classList.remove("show");
+  state = STATE.END;
+
+  if(soundOn){
+    const bgmSrc = cleared
+      ? RESULT_BGM[mode].clear
+      : RESULT_BGM[mode].over;
+
+    const a = new Audio(bgmSrc);
+    a.volume = 0.7;
+    a.play().catch(()=>{});
+  }
+}
+
+
+/* 更新 */
+function update(){
+  const t = performance.now();
+  const nowMs = Date.now();
+
+  // 物理
+  player.vy += gravity;
+  player.y += player.vy;
+
+  // 地面に吸着
+  if(player.y > groundY){
+    player.y = groundY;
+    player.vy = 0;
+  }
+
+  // スポーン
+  spawn();
+
+  // 速度
+  let curSpeed = BASE_SPEED;
+  if(t < speedUntil) curSpeed *= 1.25;
+  if(t < slowUntil)  curSpeed *= 0.72;
+// 移動（左へ流す）
+lightnings.forEach(l => { l.x -= curSpeed; });
+
+items.forEach(it => { it.x -= curSpeed; });
+
+enemies.forEach(en => {
+  en.x -= curSpeed;
+
+  // 工事中だけ回転（見た目用）
+  if(en.kind === "construction"){
+    en.rot += 0.06;
+  }
+});
+
+
+  // +1ポップ
+  popups.forEach(p => { p.y -= 0.6; p.life--; });
+  popups = popups.filter(p => p.life > 0);
+
+  // ⚡取得（当たった時だけ加算）
+  lightnings = lightnings.filter(l => {
+    if(hit(player, l)){
+      score += 10;
+      playSE("lightning");
+      if(Math.random() < 0.10) say("⚡ いいね！", 800);
+      return false;
+    }
+    return l.x > -60;
+  });
+
+  // アイテム取得（モード別）
+  items = items.filter(it=>{
+    if(hit(player, it)){
+      // 共通：大⚡
+      if(it.key === "lightningBig"){
+        score += 50;
+        playSE("lightning");
+        say("大⚡ どーん！", 900);
+        return false;
+      }
+      if(it.key === "event_fever"){
+  playSE("itemRare");
+  startFever();
+  return false;
+}
+
+
+
+      if(mode==="ch"){
+        if(it.key === "ch_repair" || it.key === "ch_station"){
+          // 🛠/⛽ 回復（どっちも同じSE＝特別アイテム枠に合わせるなら itemCommon）
+          playSE("itemCommon");
+          const before = hp;
+          hp = clamp(hp + 1, 0, 3);
+          if(hp !== before){
+            popHP();
+            popups.push({ x: player.x + player.w/2 + 10, y: player.y - 10, text: "+1", life: 40 });
+            say(it.key==="ch_station" ? "⛽ 回復！" : "🛠 回復！", 850);
+          }else{
+            say("満タン！", 850);
+          }
+        }
+
+        if(it.key === "ch_curry"){
+          speedUntil = t + 4200;
+          playSE("itemRare"); // 🍛
+          say("🍛 スピードUP！", 900);
+        }
+
+        if(it.key === "ch_compass"){
+          enemyRateDownUntil = t + 5200;
+          playSE("itemCommon"); // 🧭
+          say("🧭 敵DOWN！", 900);
+        }
+
+        if(it.key === "ch_map"){
+          mapRevealUntil = t + 4800;
+          playSE("itemCommon"); // 🗺
+          say("🗺 先読み！", 900);
+        }
+
+      }else{
+        // mm
+        if(it.key === "mm_onigiri"){
+          playSE("itemCommon"); // 🍙
+          const before = hp;
+          hp = clamp(hp + 1, 0, 3);
+          if(hp !== before){
+            popHP();
+            popups.push({ x: player.x + player.w/2 + 10, y: player.y - 10, text: "+1", life: 40 });
+            say("🍙 回復！", 850);
+          }else{
+            say("満タン！", 850);
+          }
+        }
+
+        if(it.key === "mm_dango"){
+          speedUntil = t + 4200;
+          playSE("itemCommon"); // 🍡（指定に合わせて itemCommon）
+          say("🍡 スピードUP！", 900);
+        }
+
+        if(it.key === "mm_tea"){
+          enemyRateDownUntil = t + 5200;
+          playSE("itemRare"); // 🍵
+          say("🍵 敵DOWN！", 900);
+        }
+
+        if(it.key === "mm_senbei"){
+          shieldUntilHit = true; // 1回だけ無効
+          playSE("itemCommon"); // 🍘
+          say("🍘 ガード1回！", 900);
+        }
+      }
+
+      return false;
+    }
+    return it.x > -90;
+  });
+
+  // 敵衝突
+  enemies = enemies.filter(en=>{
+    if(hit(player, en)){
+      // フィーバー中は敵が出ない設計だが念のため
+      if(t < feverUntil) return false;
+
+      // mmの🍘ガード
+      if(mode==="mm" && shieldUntilHit){
+        shieldUntilHit = false;
+        playSE("itemCommon"); // ガード音（好みで差し替えOK）
+        say("🍘 ガード！", 700);
+        return false;
+      }
+
+      flashDamage();
+      shakeUntil = t + 220;
+      popHP();
+
+      if(en.kind === "traffic"){
+        slowUntil = t + 3000;
+        playSE("hitTraffic");
+        say("🚗 渋滞〜！", 900);
+        return false;
+      }
+
+      // ダメージ
+      hp = clamp(hp - 1, 0, 3);
+      say("あっ！", 650);
+
+      if(en.kind === "pitfall"){
+        playSE("hitPitfall");
+        sinkUntil = t + 650;
+      }else if(en.kind === "construction"){
+        playSE("hitConstruction");
+        starsUntil = t + 900;
+        starsAngle = 0;
+      }else if(en.kind === "trouble"){
+        playSE("hitTrouble");
+        shakeUntil = t + 320;
+      }else{
+        // 念のため
+        playSE("hitTrouble");
+      }
+      return false;
+    }
+    return en.x > -120;
+  });
+
+  // フィーバー終わり
+  endFeverIfNeeded();
+
+  // 状態表示
+  setStatus();
+
+
+if(lightnings.length > 25) lightnings.splice(0,5);
+if(items.length > 20) items.splice(0,5);
+if(enemies.length > 20) enemies.splice(0,5);
+
+  // 終了判定（時間）
+  const remain = GAME_MS - (nowMs - startAt);
+  updateHUD(Math.max(0, remain));
+
+  if(hp <= 0) finish(false);
+  else if(remain <= 0) finish(true);
+}
+
+/* =========================================================
+  9) 描画（状態別）
+========================================================= */
+function drawUI(){
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(state===STATE.SOUND){
+
+  const img = isMobile()?UI.sound_sp:UI.sound;
+
+  if(img?.ok){
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+  }else{
+    drawFallbackText("ui_sound_select.png が見つからない");
+  }
+
+  return;
+}
+
+
+
+
+  if(state===STATE.COURSE){
+
+    const img = isMobile()?UI.course_sp:UI.course;
+
+    if(img?.ok){
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }else{
+      drawFallbackText("ui_course_select.png が見つからない");
+    }
+
+    return;
+
+  }
+
+  if(state===STATE.START){
+
+    const img = isMobile()?UI.start_sp:UI.start;
+
+    if(img?.ok){
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }else{
+      drawFallbackText("ui_start.png が見つからない");
+    }
+
+    return;
+  }
+
+
+  if(state===STATE.END){
+  const img = lastCleared
+    ? (isMobile()?UI.clear_sp:UI.clear)
+    : (isMobile()?UI.over_sp:UI.over);
+
+  if(img?.ok){
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+  }
+  return;
+}
+}
+
+function drawGame(){
+  // 背景
+const bg = isMobile() ? I.bg_sp : I.bg;
+
+if(bg?.ok){
+  ctx.drawImage(bg.img, 0, 0, canvas.width, canvas.height);
+}else{
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+  const t = performance.now();
+
+  // 先読み（chのみ）
+  if(mode==="ch" && t < mapRevealUntil){
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    enemies.forEach(en=>{
+      ctx.fillStyle="#000";
+      ctx.fillRect(en.x + 12, en.y + 12, en.w - 24, en.h - 24);
+    });
+    ctx.restore();
+  }
+
+  // ⚡
+  lightnings.forEach(l=>{
+    if(I.lightning?.ok) ctx.drawImage(I.lightning.img, l.x, l.y, l.w, l.h);
+    else { ctx.fillStyle="#ff0"; ctx.fillRect(l.x,l.y,l.w,l.h); }
+  });
+
+  // アイテム
+items.forEach(it=>{
+  const imgObj = I[it.key];
+  if(imgObj?.ok){
+    ctx.drawImage(imgObj.img, it.x, it.y, it.w, it.h);
+  }
+});
+
+
+  // 敵
+  enemies.forEach(en=>{
+    ctx.save();
+    const imgObj = I[en.kind];
+    if(en.kind === "construction" && imgObj?.ok){
+      ctx.translate(en.x + en.w/2, en.y + en.h/2);
+      ctx.rotate(en.rot);
+      ctx.drawImage(imgObj.img, -en.w/2, -en.h/2, en.w, en.h);
+    }else{
+      if(imgObj?.ok) ctx.drawImage(imgObj.img, en.x, en.y, en.w, en.h);
+      else { ctx.fillStyle="#f00"; ctx.fillRect(en.x,en.y,en.w,en.h); }
+    }
+    ctx.restore();
+  });
+
+  // キャラ（揺れ/沈む）
+　　let px = player.x;
+　　let py = player.y;
+
+// 揺れ
+　if(t < shakeUntil) px += (Math.random()*8 - 4);
+
+// 沈む
+　if(t < sinkUntil){
+  　const p = 1 - (sinkUntil - t) / 650;
+  　py += p * 220;
+}
+
+　　const playerKey = MODE[mode].playerKey;
+
+// 脈動（※やるならこの1回だけ）
+　　const scale = 1 + Math.sin(t * 0.015) * 0.05;
+　　const cx = px + player.w/2;
+　　const cy = py + player.h/2;
+
+　　ctx.save();
+　　ctx.translate(cx, cy);
+　　ctx.scale(scale, scale);
+　　ctx.translate(-cx, -cy);
+
+　if(I[playerKey]?.ok){
+  　ctx.drawImage(I[playerKey].img, px, py, player.w, player.h);
+}
+
+　　ctx.restore();
+
+
+
+
+
+  // 🍘ガードリング
+  if(mode==="mm" && shieldUntilHit){
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = "rgba(255,165,0,.95)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(px + player.w/2, py + player.h/2, 44, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 🚧星ぐるぐる
+  if(t < starsUntil){
+    const centerX = px + player.w/2;
+    const centerY = py + player.h/2;
+    starsAngle += 0.22;
+    const r = 44;
+    for(let k=0; k<5; k++){
+      const a = starsAngle + k*(Math.PI*2/5);
+      const sx = centerX + Math.cos(a)*r;
+      const sy = centerY + Math.sin(a)*r;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(a);
+      ctx.globalAlpha = 0.9;
+      drawStar(ctx, 0, 0, 5, 10, 5);
+      ctx.restore();
+    }
+  }
+
+  // +1ポップ
+  popups.forEach(p=>{
+    ctx.save();
+    ctx.globalAlpha = p.life / 40;
+    ctx.font = "18px sans-serif";
+    ctx.fillStyle = "#27ae60";
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  });
+
+  // 実況吹き出し
+  if(t < comment.until && comment.text){
+    const bx = px + player.w + 10;
+    const by = py + 4;
+    const bw = 180;
+    const bh = 38;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 2;
+
+    roundRect(ctx, bx, by, bw, bh, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bx, by + 18);
+    ctx.lineTo(bx - 10, by + 24);
+    ctx.lineTo(bx, by + 30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#111";
+    ctx.font = "13px sans-serif";
+    ctx.fillText(comment.text, bx + 10, by + 24);
+    ctx.restore();
+  }
+}
+
+function drawFallbackText(msg){
+  ctx.save();
+  ctx.fillStyle="#111";
+  ctx.font="bold 18px sans-serif";
+  ctx.fillText(msg, 40, 80);
+  ctx.font="14px sans-serif";
+  ctx.fillText("ファイル名を再確認して、index.htmlと同じフォルダに置いてね", 40, 110);
+  ctx.restore();
+}
+
+function drawStar(ctx, x, y, spikes, outerRadius, innerRadius){
+  let rot = Math.PI / 2 * 3;
+  let step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(x, y - outerRadius);
+  for(let i=0; i<spikes; i++){
+    ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius);
+    rot += step;
+    ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius);
+    rot += step;
+  }
+  ctx.lineTo(x, y - outerRadius);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(255, 200, 0, .95)";
+  ctx.strokeStyle = "rgba(255, 140, 0, .95)";
+  ctx.lineWidth = 2;
+  ctx.fill(); ctx.stroke();
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  if(ctx.roundRect){
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+/* =========================================================
+  10) 描画ループ（常時）
+========================================================= */
+function drawFrame(){
+  if(state===STATE.SOUND || state===STATE.COURSE || state===STATE.START || state===STATE.END){
+    drawUI();
+    requestAnimationFrame(drawFrame);
+    return;
+  }
+
+  if(state===STATE.GAME){
+    if(running) update();
+    drawGame();
+    requestAnimationFrame(drawFrame);
+    return;
+  }
+
+  requestAnimationFrame(drawFrame);
+}
+
+/* =========================================================
+  11) 起動：画像ロード
+========================================================= */
+async function boot(){
+  const uiKeys = Object.keys(UI_SRC);
+  const uiLoaded = await Promise.all(uiKeys.map(k=>loadOneImage(UI_SRC[k])));
+  uiKeys.forEach((k,idx)=>UI[k]=uiLoaded[idx]);
+
+  const keys = Object.keys(ASSET);
+  const loaded = await Promise.all(keys.map(k => loadOneImage(ASSET[k])));
+  keys.forEach((k, idx)=>{ I[k] = loaded[idx]; });
+
+  loadingEl.style.display = "none";
+
+  // 初期状態（音選択UI表示）
+  requestAnimationFrame(drawFrame);
+}
+boot();
+</script>
+</body>
+</html>
