@@ -440,7 +440,6 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
-  // ⭐⭐⭐ これが絶対必要（iOS解錠）
   try{
     const a = new Audio(SE_SRC.jump);
     a.volume = 0;
@@ -450,6 +449,7 @@ function unlockAudioOnce(){
     setTimeout(()=>{ a.pause(); },50);
   }catch(e){}
 }
+
 
 
 
@@ -529,13 +529,13 @@ if(state===STATE.SOUND){
 
   if(x < canvas.width/2){
   soundOn = true;
-  alert("play try"); // ←追加
 
 
     // ⭐スマホ確定再生テスト
     stopBgm();
 
-    bgm = new Audio("bgm_common_intro.mp3");
+    playBgm("bgm_common_intro.mp3");
+
     bgm.loop = true;
     bgm.volume = 0.6;
     bgm.playsInline = true;
