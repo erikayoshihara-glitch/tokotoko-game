@@ -516,17 +516,35 @@ canvas.addEventListener("pointerdown",(e)=>{
 
 
   // ① 音あり / 音なし（左=音あり、右=音なし）
-  if(state===STATE.SOUND){
-    if(x < canvas.width/2){
-      soundOn = true;
-      playBgm("bgm_common_intro.mp3");
-    }else{
-      soundOn = false;
-      stopBgm();
-    }
-    state = STATE.COURSE;
-    return;
+  // ① 音あり / 音なし（左=音あり、右=音なし）
+if(state===STATE.SOUND){
+
+  if(x < canvas.width/2){
+    soundOn = true;
+
+    // ⭐スマホ確定再生テスト
+    stopBgm();
+
+    bgm = new Audio("bgm_common_intro.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.6;
+    bgm.playsInline = true;
+    bgm.setAttribute("playsinline","");
+    bgm.setAttribute("webkit-playsinline","");
+
+    const p = bgm.play();
+    if(p && p.catch) p.catch(()=>{});
+
+  }else{
+    soundOn = false;
+    stopBgm();
   }
+
+  state = STATE.COURSE;
+  return;
+}
+
+  
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
