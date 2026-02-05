@@ -277,10 +277,8 @@ const SE_SRC = {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// ⭐ iPhoneタップ座標ズレ防止（これ追加）
-canvas.style.touchAction = "none";
+canvas.style.touchAction = "none"; // ←1回だけでOK
 
-let groundY = canvas.height - 160;
 
 // ⭐スマホ縦横フィット（見切れ防止）
 function isMobile(){
@@ -315,12 +313,12 @@ function fitCanvas(){
   const scale = Math.min(vw/baseW, vh/baseH);
 
   if(isMobile()){
-    canvas.style.width  = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
-  }else{
-    canvas.style.width  = (baseW * scale) + "px";
-    canvas.style.height = (baseH * scale) + "px";
-  }
+  canvas.style.width  = "100vw";
+  canvas.style.height = "100vh";
+}else{
+  canvas.style.width  = (baseW * scale) + "px";
+  canvas.style.height = (baseH * scale) + "px";
+}
 }
 
 
@@ -552,19 +550,30 @@ canvas.addEventListener("pointerdown",(e)=>{
   // ① 音あり / 音なし（左=音あり、右=音なし）
 if(state===STATE.SOUND){
 
-  if(x < canvas.width/2){
-    soundOn = true;
+  const nx = x / canvas.width;
+  const ny = y / canvas.height;
 
+  // ⭐音ありボタン
+  if(nx > 0.18 && nx < 0.82 && ny > 0.48 && ny < 0.62){
+
+    soundOn = true;
     playBgm("bgm_common_intro.mp3");
 
-  }else{
-    soundOn = false;
-    stopBgm();
+    state = STATE.COURSE;
+    return;
   }
 
-  state = STATE.COURSE;
-  return;
+  // ⭐音なしボタン
+  if(nx > 0.18 && nx < 0.82 && ny > 0.64 && ny < 0.80){
+
+    soundOn = false;
+    stopBgm();
+
+    state = STATE.COURSE;
+    return;
+  }
 }
+
 
 
   
