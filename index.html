@@ -520,7 +520,9 @@ canvas.addEventListener("pointerdown",(e)=>{
 if(state===STATE.SOUND){
 
   if(x < canvas.width/2){
-    soundOn = true;
+  soundOn = true;
+  alert("play try"); // ←追加
+
 
     // ⭐スマホ確定再生テスト
     stopBgm();
