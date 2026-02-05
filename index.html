@@ -440,7 +440,15 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
-  // ⭐スマホ用：無音Audioを作らない
+  // ⭐⭐⭐ これが絶対必要（iOS解錠）
+  try{
+    const a = new Audio(SE_SRC.jump);
+    a.volume = 0;
+    a.playsInline = true;
+    const p = a.play();
+    if(p && p.catch) p.catch(()=>{});
+    setTimeout(()=>{ a.pause(); },50);
+  }catch(e){}
 }
 
 
