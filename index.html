@@ -431,6 +431,7 @@ function playBgm(src){
 
 // iOS/Safari対策：最初のユーザー操作でアンロック
 function unlockAudioOnce(){
+
   if(audioUnlocked) return;
   audioUnlocked = true;
 
@@ -439,14 +440,18 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
-  // SEアンロック
+  // ⭐重要：bgm自体をアンロックする
   try{
-    const a = new Audio(SE_SRC.jump);
-    a.volume = 0;
-    a.play().catch(()=>{});
+    if(!bgm){
+      bgm = new Audio();
+      bgm.playsInline = true;
+    }
+    bgm.src = "";
+    bgm.play().catch(()=>{});
   }catch(e){}
 
 }
+
 
 
 
@@ -471,7 +476,9 @@ function playSE(key){
   // cloneNode は超軽い
   const a = sePool[key].cloneNode();
 
-  a.volume = 0.85;
+a.playsInline = true;   // ← ⭐追加（超重要）
+a.volume = 0.85;
+
 
   // フィーバー中ピッチUP
   if(inFeverNow()){
@@ -511,7 +518,6 @@ function hitBtn(btn,x,y){
 
 
 document.addEventListener("touchstart", unlockAudioOnce, { once:true });
-document.addEventListener("pointerdown", unlockAudioOnce, { once:true });
 
 canvas.addEventListener("pointerdown",(e)=>{
   e.preventDefault();
