@@ -551,24 +551,29 @@ canvas.addEventListener("pointerdown",(e)=>{
   // ① 音あり / 音なし（左=音あり、右=音なし）
 if(state===STATE.SOUND){
 
-  const nx = x / canvas.width;
-  const ny = y / canvas.height;
+  const rect = canvas.getBoundingClientRect();
+　const nx = (e.clientX - rect.left) / rect.width;
+　const ny = (e.clientY - rect.top) / rect.height;
 
-  // ⭐音あり（少し下へ調整）
-  if(nx > 0.2 && nx < 0.8 && ny > 0.52 && ny < 0.68){
+
+  // ⭐音あり
+  if(nx > 0.2 && nx < 0.8 && ny > 0.50 && ny < 0.65){
     soundOn = true;
     playBgm("bgm_common_intro.mp3");
+    state = STATE.COURSE;
+    return;
   }
 
-  // ⭐音なし（少し下へ調整）
-  else if(nx > 0.2 && nx < 0.8 && ny > 0.70 && ny < 0.86){
+  // ⭐音なし
+  if(nx > 0.2 && nx < 0.8 && ny > 0.68 && ny < 0.83){
     soundOn = false;
     stopBgm();
+    state = STATE.COURSE;
+    return;
   }
 
-  state = STATE.COURSE;
-  return;
-} 
+}
+
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
