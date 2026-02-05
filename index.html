@@ -442,12 +442,6 @@ function unlockAudioOnce(){
     a.play().catch(()=>{});
   }catch(e){}
 
-  // BGMアンロック
-  try{
-    const b = new Audio("bgm_common_intro.mp3");
-    b.volume = 0;
-    b.play().catch(()=>{});
-  }catch(e){}
 }
 
 
