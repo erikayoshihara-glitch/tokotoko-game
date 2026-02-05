@@ -408,7 +408,11 @@ function playBgm(src){
 
   if(!soundOn) return;
 
-  // ⭐先に完全停止（多重再生防止の核）
+  // ⭐ PCでも音出るように
+  if(audioCtx){
+    try{ audioCtx.resume(); }catch(e){}
+  }
+
   stopBgm();
 
   normalBgmSrc = src;
@@ -427,10 +431,6 @@ function playBgm(src){
   const p = bgm.play();
   if(p && p.catch) p.catch(()=>{});
 }
-
-
-
-
 
 
 // iOS/Safari対策：最初のユーザー操作でアンロック
