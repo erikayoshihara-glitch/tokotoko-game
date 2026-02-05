@@ -440,18 +440,8 @@ function unlockAudioOnce(){
     audioCtx.resume();
   }catch(e){}
 
-  // ⭐重要：bgm自体をアンロックする
-  try{
-    if(!bgm){
-      bgm = new Audio();
-      bgm.playsInline = true;
-    }
-    bgm.src = "";
-    bgm.play().catch(()=>{});
-  }catch(e){}
-
+  // ⭐スマホ用：無音Audioを作らない
 }
-
 
 
 
@@ -515,9 +505,6 @@ function hitBtn(btn,x,y){
     ny < btn.y2
   );
 }
-
-
-document.addEventListener("touchstart", unlockAudioOnce, { once:true });
 
 canvas.addEventListener("pointerdown",(e)=>{
   e.preventDefault();
