@@ -1525,20 +1525,20 @@ items.forEach(it=>{
 if(I.ui_jump?.ok){
 
   const btnW = isMobile()
-    ? canvas.width * 0.4
-    : canvas.width * 0.22;
+    ? canvas.width * 0.65
+    : canvas.width * 0.35;
 
-  const btnH = btnW * 0.28;
+  const btnH = btnW * 0.4;
 
   const btnX = (canvas.width - btnW) / 2;
-  const btnY = canvas.height - btnH - (isMobile()?30:20);
+  const btnY = canvas.height - btnH - (isMobile()?40:30);
 
-  ctx.globalAlpha = 0.95;
-  ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
   ctx.globalAlpha = 1;
+  ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
 
   jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
 }
+
 
 }
 
