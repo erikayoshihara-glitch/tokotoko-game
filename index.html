@@ -307,7 +307,7 @@ function fitCanvas(){
   canvas.height = baseH;
 
   // 地面位置
-  groundY = canvas.height - (isMobile()?220:160);
+  groundY = canvas.height - (isMobile()?300:200);
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -1524,20 +1524,27 @@ items.forEach(it=>{
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
 if(I.ui_jump?.ok){
 
+  // ⭐ 横幅だけ指定（高さは画像比率で自動）
   const btnW = isMobile()
-    ? canvas.width * 0.85
-    : canvas.width * 0.4;
+    ? canvas.width * 0.48   // スマホ：今のサイズOK
+    : canvas.width * 0.28;  // PC：縦長防止
 
-  const btnH = btnW * 0.22;
+  // ⭐ 画像の比率から高さ自動計算（←超重要）
+  const ratio = I.ui_jump.img.height / I.ui_jump.img.width;
+  const btnH = btnW * ratio;
 
+  // ⭐ 地面の上にピッタリ置く
   const btnX = (canvas.width - btnW) / 2;
-  const btnY = canvas.height - btnH - (isMobile()?40:30);
+  const btnY = canvas.height - btnH - 20;
 
-  ctx.globalAlpha = 1;
+
+  ctx.globalAlpha = 0.95;
   ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
+  ctx.globalAlpha = 1;
 
   jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
 }
+
 
 
 }
