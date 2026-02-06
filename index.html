@@ -187,6 +187,8 @@ const UI = {};
 const ASSET = {
   bg: "background.png",
   bg_sp: "background_sp.png",
+  ui_jump: "ui_jump.png",
+
   event_fever: "ch_event_fever.png",
 
   // キャラ
@@ -597,9 +599,29 @@ canvas.addEventListener("pointerdown",(e)=>{
 
   // ④ ゲーム中：ジャンプ
   if(state===STATE.GAME){
-    jump();
-    return;
+
+  // ⭐ JUMPボタン押したかチェック
+  if(jumpBtnRect){
+    if(
+      x > jumpBtnRect.x &&
+      x < jumpBtnRect.x + jumpBtnRect.w &&
+      y > jumpBtnRect.y &&
+      y < jumpBtnRect.y + jumpBtnRect.h
+    ){
+      jumpBtnPressed = true;
+      jump();
+      return;
+    }
   }
+
+  // PCは画面クリックでもジャンプ
+  if(!isMobile()){
+    jump();
+  }
+
+  return;
+}
+
 
   // ⑤ 終了画面：もう一度 / やめる
 if(state===STATE.END){
@@ -694,6 +716,10 @@ let starsAngle = 0;
 
 let popups = [];
 let comment = { text:"", until:0 };
+let jumpBtnRect = null; 
+let jumpBtnPressed = false; 
+
+
 
 let shieldUntilHit = false; // mm専用🍘
 
@@ -1495,6 +1521,25 @@ items.forEach(it=>{
     ctx.fillText(comment.text, bx + 10, by + 24);
     ctx.restore();
   }
+  // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
+if(I.ui_jump?.ok){
+
+  const btnW = isMobile()
+    ? canvas.width * 0.4
+    : canvas.width * 0.22;
+
+  const btnH = btnW * 0.28;
+
+  const btnX = (canvas.width - btnW) / 2;
+  const btnY = canvas.height - btnH - (isMobile()?30:20);
+
+  ctx.globalAlpha = 0.95;
+  ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
+  ctx.globalAlpha = 1;
+
+  jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
+}
+
 }
 
 function drawFallbackText(msg){
