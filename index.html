@@ -673,6 +673,8 @@ let hp = 3;
 let lightnings = [];
 let items = [];
 let enemies = [];
+let bgScrollX = 0;
+
 
 let lastSpawn = 0;
 let spawnCount = 0;
@@ -1059,6 +1061,12 @@ function update(){
   const t = performance.now();
   const nowMs = Date.now();
 
+  bgScrollX -= 2;
+  if(bgScrollX <= -canvas.width){
+    bgScrollX = 0;
+  }
+
+
   // 物理
   player.vy += gravity;
   player.y += player.vy;
@@ -1331,7 +1339,10 @@ function drawGame(){
 const bg = isMobile() ? I.bg_sp : I.bg;
 
 if(bg?.ok){
-  ctx.drawImage(bg.img, 0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
+  ctx.drawImage(bg.img, bgScrollX + canvas.width, 0, canvas.width, canvas.height);
+
 }else{
   ctx.fillStyle="#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
