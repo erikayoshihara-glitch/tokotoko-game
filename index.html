@@ -404,7 +404,7 @@ function stopBgm(){
 
 
 
-function playBgm(src){
+function playBgm(src, loop=true){
 
   if(!soundOn) return;
 
@@ -420,7 +420,7 @@ function playBgm(src){
   bgm = new Audio();
 
   bgm.src = src;
-  bgm.loop = true;
+  bgm.loop = loop;
   bgm.volume = 0.6;
   bgm.preload = "auto";
 
@@ -657,9 +657,6 @@ const GAME_MS = 30_000;
 const gravity   = 1.35;
 const jumpPower = -22;
 const BASE_SPEED = 8;
-
-const PLAYER_W = 80;
-const PLAYER_H = 80;
 
 let running = false;
 let startAt = 0;
@@ -953,7 +950,16 @@ function resetGameCore(){
   running = false;
   startAt = 0;
 
-  player = { x:150, y:groundY, w:PLAYER_W, h:PLAYER_H, vy:0 };
+  const size = isMobile() ? 110 : 80; // ⭐スマホだけ大きく
+
+player = {
+  x:150,
+  y:groundY,
+  w:size,
+  h:size,
+  vy:0
+};
+
   score = 0;
   hp = 3;
 
@@ -1023,8 +1029,11 @@ function startGame(){
 /* 終了 */
 function finish(cleared){
 
+  if(!running) return;
+
   running = false;
-  normalBgmSrc = null; // ⭐追加
+
+  normalBgmSrc = null;
 
   lastCleared = !!cleared;
 
@@ -1037,10 +1046,10 @@ function finish(cleared){
       ? RESULT_BGM[mode].clear
       : RESULT_BGM[mode].over;
 
-    playBgm(bgmSrc);
+    playBgm(bgmSrc, false); // ⭐ここ重要
   }
-
 }
+
 
 
 
