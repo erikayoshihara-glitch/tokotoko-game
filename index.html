@@ -1301,24 +1301,21 @@ if(enemies.length > 20) enemies.splice(0,5);
   9) 描画（状態別）
 ========================================================= */
 function drawUI(){
+
   ctx.fillStyle="#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
   if(state===STATE.SOUND){
 
-  const img = isMobile()?UI.sound_sp:UI.sound;
+    const img = isMobile()?UI.sound_sp:UI.sound;
 
-  if(img?.ok){
-    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-  }else{
-    drawFallbackText("ui_sound_select.png が見つからない");
+    if(img?.ok){
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }else{
+      drawFallbackText("ui_sound_select.png が見つからない");
+    }
+    return;
   }
-
-  return;
-}
-
-
-
 
   if(state===STATE.COURSE){
 
@@ -1329,9 +1326,7 @@ function drawUI(){
     }else{
       drawFallbackText("ui_course_select.png が見つからない");
     }
-
     return;
-
   }
 
   if(state===STATE.START){
@@ -1343,22 +1338,21 @@ function drawUI(){
     }else{
       drawFallbackText("ui_start.png が見つからない");
     }
-
     return;
   }
 
-
   if(state===STATE.END){
-  const img = lastCleared
-    ? (isMobile()?UI.clear_sp:UI.clear)
-    : (isMobile()?UI.over_sp:UI.over);
+    const img = lastCleared
+      ? (isMobile()?UI.clear_sp:UI.clear)
+      : (isMobile()?UI.over_sp:UI.over);
 
-  if(img?.ok){
-    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    if(img?.ok){
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }
+    return;
   }
-  return;
 }
-}
+
 
 function drawGame(){
   // 背景
@@ -1373,6 +1367,7 @@ if(bg?.ok){
   ctx.fillStyle="#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 }
+
   const t = performance.now();
 
   // 先読み（chのみ）
@@ -1522,33 +1517,28 @@ items.forEach(it=>{
     ctx.restore();
   }
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
-if(I.ui_jump?.ok){
+if(I.ui_jump && I.ui_jump.ok){
 
   // ⭐ 横幅だけ指定（高さは画像比率で自動）
-  const btnW = isMobile()
-    ? canvas.width * 0.48   // スマホ：今のサイズOK
-    : canvas.width * 0.28;  // PC：縦長防止
+  // ===== JUMPボタン（地面下いっぱいに横長） =====
 
-  // ⭐ 画像の比率から高さ自動計算（←超重要）
-  const ratio = I.ui_jump.img.height / I.ui_jump.img.width;
-  const btnH = btnW * ratio;
+const groundSpace = canvas.height - groundY;
 
-  // ⭐ 地面の上にピッタリ置く
-  const btnX = (canvas.width - btnW) / 2;
-  const btnY = canvas.height - btnH - 20;
+const btnH = groundSpace * 0.55;
+const btnW = canvas.width * (isMobile()?0.75:0.35);
 
+const btnX = (canvas.width - btnW) / 2;
+const btnY = groundY + (groundSpace - btnH) / 2;
 
-  ctx.globalAlpha = 0.95;
-  ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
-  ctx.globalAlpha = 1;
+ctx.globalAlpha = 0.95;
+ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
+ctx.globalAlpha = 1;
 
-  jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
-}
-
+jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
 
 
 }
-
+}
 function drawFallbackText(msg){
   ctx.save();
   ctx.fillStyle="#111";
