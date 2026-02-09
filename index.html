@@ -185,8 +185,9 @@ const UI = {};
   2) ゲーム用アセット（画像）
 ========================================================= */
 const ASSET = {
-  bg: "background.png",
-  bg_sp: "background_sp.png",
+  bg: "background.jpg",
+  bg_sp: "background_sp.jpg",
+
   ui_jump: "ui_jump.png",
 
   event_fever: "ch_event_fever.png",
@@ -549,25 +550,56 @@ canvas.addEventListener("pointerdown",(e)=>{
 
   if(state===STATE.SOUND){
 
-    const nx = x / canvas.width;
-    const ny = y / canvas.height;
+  const nx = x / canvas.width;
+  const ny = y / canvas.height;
 
-    if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.73){
+  console.log("SOUND click", { nx, ny });
 
+  // ==========================
+  // 📱 スマホ（縦並び）
+  // ==========================
+  if(isMobile()){
+
+    if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.66){
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
       state = STATE.COURSE;
       return;
     }
 
-    if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.73){
-
+    if(nx > 0.2 && nx < 0.8 && ny > 0.68 && ny < 0.76){
       soundOn = false;
       stopBgm();
       state = STATE.COURSE;
       return;
     }
+
+  }else{
+
+  // ==========================
+  // 💻 PC（横並び）
+  // ==========================
+    if(ny > 0.55 && ny < 0.75){
+
+      // 左＝音あり
+      if(nx > 0.10 && nx < 0.48){
+        soundOn = true;
+        playBgm("bgm_common_intro.mp3");
+        state = STATE.COURSE;
+        return;
+      }
+
+      // 右＝音なし
+      if(nx > 0.52 && nx < 0.90){
+        soundOn = false;
+        stopBgm();
+        state = STATE.COURSE;
+        return;
+      }
+    }
   }
+}
+
 
 
 
@@ -803,11 +835,22 @@ function startFever(){
   // （playBgm が完全停止管理するから）
 
   if(soundOn){
-    feverBgm = new Audio("bgm_fever.mp3");
-    feverBgm.loop = true;
-    feverBgm.volume = 0.7;
-    feverBgm.play().catch(()=>{});
+
+  // ⭐通常BGMを一時停止（止めない）
+  if(bgm){
+    try{ bgm.pause(); }catch(e){}
   }
+
+  feverBgm = new Audio("bgm_fever.mp3");
+  feverBgm.loop = true;
+  feverBgm.volume = 0.7;
+
+  feverBgm.playsInline = true;
+  feverBgm.setAttribute("playsinline","");
+  feverBgm.setAttribute("webkit-playsinline","");
+
+  feverBgm.play().catch(()=>{});
+}
 
   say("🌈 フィーバー突入！",1100);
 }
@@ -831,12 +874,10 @@ function endFeverIfNeeded(){
       feverBgm = null;
     }
 
-    // ⭐⭐⭐ これ追加（超重要）
-    stopBgm();
-
-    if(normalBgmSrc){
-      playBgm(normalBgmSrc);
-    }
+    // ⭐通常BGMを再開
+if(bgm){
+  try{ bgm.play(); }catch(e){}
+}
   }
 }
 
@@ -1353,20 +1394,24 @@ function drawUI(){
   }
 }
 
-
 function drawGame(){
   // 背景
-const bg = isMobile() ? I.bg_sp : I.bg;
+const bg = (isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg;
 
-if(bg?.ok){
+
+
+if(bg && bg.ok){
 
   ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
   ctx.drawImage(bg.img, bgScrollX + canvas.width, 0, canvas.width, canvas.height);
 
-}else{
-  ctx.fillStyle="#fff";
+} else {
+
+  ctx.fillStyle = "#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
+
 }
+
 
   const t = performance.now();
 
