@@ -579,7 +579,7 @@ canvas.addEventListener("pointerdown",(e)=>{
   // ==========================
   // 💻 PC（横並び）
   // ==========================
-    if(ny > 0.55 && ny < 0.75){
+    if(ny > 0.63 && ny < 0.83){
 
       // 左＝音あり
       if(nx > 0.10 && nx < 0.48){
@@ -1351,10 +1351,12 @@ function drawUI(){
     const img = isMobile()?UI.sound_sp:UI.sound;
 
     if(img?.ok){
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-    }else{
-      drawFallbackText("ui_sound_select.png が見つからない");
-    }
+  ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+}else{
+  drawFallbackText("ui_sound_select.png が見つからない");
+}
+
+
     return;
   }
 
@@ -1416,15 +1418,31 @@ if(bg && bg.ok){
   const t = performance.now();
 
   // 先読み（chのみ）
-  if(mode==="ch" && t < mapRevealUntil){
-    ctx.save();
-    ctx.globalAlpha = 0.25;
-    enemies.forEach(en=>{
-      ctx.fillStyle="#000";
-      ctx.fillRect(en.x + 12, en.y + 12, en.w - 24, en.h - 24);
-    });
-    ctx.restore();
-  }
+  // 先読み（chのみ）
+if(mode==="ch" && t < mapRevealUntil){
+  ctx.save();
+
+  enemies.forEach(en=>{
+
+    // ⭐ 敵の下に影（先読みエフェクト）
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = "#000";
+
+    ctx.beginPath();
+    ctx.ellipse(
+      en.x + en.w/2,     // 中央
+      en.y + en.h - 6,   // 足元
+      en.w/2.2,          // 横幅
+      8,                 // 縦幅
+      0, 0, Math.PI*2
+    );
+    ctx.fill();
+
+  });
+
+  ctx.restore();
+}
+
 
   // ⚡
   lightnings.forEach(l=>{
@@ -1573,7 +1591,9 @@ const btnH = groundSpace * 0.55;
 const btnW = canvas.width * (isMobile()?0.75:0.35);
 
 const btnX = (canvas.width - btnW) / 2;
-const btnY = groundY + (groundSpace - btnH) / 2;
+const offsetY = isMobile() ? 0 : 40; // ⭐PCだけ下げる量（まず40でOK）
+const btnY = groundY + (groundSpace - btnH) / 2 + offsetY;
+
 
 ctx.globalAlpha = 0.95;
 ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
