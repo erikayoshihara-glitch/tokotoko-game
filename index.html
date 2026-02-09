@@ -1550,35 +1550,25 @@ items.forEach(it=>{
     ctx.restore();
   });
 
-  // 実況吹き出し
-  if(t < comment.until && comment.text){
-    const bx = px + player.w + 10;
-    const by = py + 4;
-    const bw = 180;
-    const bh = 38;
+  // ⭐ 上部テロップ表示（吹き出し代替）
+if(t < comment.until && comment.text){
 
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.lineWidth = 2;
+  ctx.save();
 
-    roundRect(ctx, bx, by, bw, bh, 12);
-    ctx.fill();
-    ctx.stroke();
+  // 半透明黒バー
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0,120,canvas.width,40);
 
-    ctx.beginPath();
-    ctx.moveTo(bx, by + 18);
-    ctx.lineTo(bx - 10, by + 24);
-    ctx.lineTo(bx, by + 30);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+  // テキスト
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(comment.text, canvas.width/2,145);
 
-    ctx.fillStyle = "#111";
-    ctx.font = "13px sans-serif";
-    ctx.fillText(comment.text, bx + 10, by + 24);
-    ctx.restore();
-  }
+  ctx.restore();
+}
+
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
 if(I.ui_jump && I.ui_jump.ok){
 
@@ -1604,6 +1594,8 @@ jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
 
 }
 }
+
+
 function drawFallbackText(msg){
   ctx.save();
   ctx.fillStyle="#111";
