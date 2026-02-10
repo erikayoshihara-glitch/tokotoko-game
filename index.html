@@ -1081,12 +1081,13 @@ function resetGameCore(){
   const size = isMobile() ? 130 : 70; // ⭐スマホだけ大きく
 
 player = {
-  x:150,
-  y:groundY,
-  w:size,
-  h:size,
-  vy:0
+  x: isMobile() ? 60 : 150, // ⭐ここ変更
+  y: groundY,
+  w: size,
+  h: size,
+  vy: 0
 };
+
 
   score = 0;
   hp = 3;
