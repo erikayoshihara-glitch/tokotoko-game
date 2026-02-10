@@ -294,8 +294,9 @@ canvas.style.touchAction = "none"; // ←1回だけでOK
 
 // ⭐スマホ縦横フィット（見切れ防止）
 function isMobile(){
-  return window.innerWidth < 768;
+  return /iPhone|Android.+Mobile|iPad|iPod/i.test(navigator.userAgent);
 }
+
 
 function fitCanvas(){
 
