@@ -153,16 +153,16 @@ const BTN = {
   end_retry_pc : { x1:140/960, x2:460/960, y1:340/540, y2:460/540 },
   end_exit_pc  : { x1:500/960, x2:820/960, y1:340/540, y2:460/540 },
 
-  // 🔊 音選択（スマホ）
-sound_on_sp  : { x1:0.15, x2:0.45, y1:0.55, y2:0.75 },
-sound_off_sp : { x1:0.55, x2:0.85, y1:0.55, y2:0.75 },
+  // ⭐ 音選択（スマホ：上下）
+  sound_on_sp  : { x1:0.15, x2:0.85, y1:0.45, y2:0.60 },
+  sound_off_sp : { x1:0.15, x2:0.85, y1:0.62, y2:0.78 },
 
-// 🔊 音選択（PC）
-sound_on_pc  : { x1:140/960, x2:420/960, y1:260/540, y2:400/540 },
-sound_off_pc : { x1:520/960, x2:800/960, y1:260/540, y2:400/540 },
-
+  // ⭐ 音選択（PC）
+  sound_on_pc  : { x1:140/960, x2:420/960, y1:260/540, y2:400/540 },
+  sound_off_pc : { x1:520/960, x2:800/960, y1:260/540, y2:400/540 }
 
 };
+
 
 let state = STATE.SOUND;
 let soundOn = true;
@@ -564,56 +564,51 @@ canvas.addEventListener("pointerdown",(e)=>{
 
   unlockAudioOnce();
 
-  // ⭐ 追加（スマホ音出すため）
-  if(audioCtx){
-    try{ audioCtx.resume(); }catch(e){}
-  }
+  const { x, y } = getPointerXY(e); // ← 必ず必要
 
-  const { x, y } = getPointerXY(e);
 
   // ==========================
-  // 🔊 音あり / 音なし選択
-  // ==========================
-  if(state === STATE.SOUND){
+// 🔊 音あり / 音なし選択
+// ==========================
+if (state === STATE.SOUND) {
 
-  if(isMobile()){
+  if (isMobile()) {
 
-    // ⭐ 上半分：音あり
-    if(y < canvas.height / 2){
+    if (hitBtn(BTN.sound_on_sp, x, y)) {
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
       state = STATE.COURSE;
       return;
     }
 
-    // ⭐ 下半分：音なし
-    if(y >= canvas.height / 2){
+    if (hitBtn(BTN.sound_off_sp, x, y)) {
       soundOn = false;
       stopBgm();
       state = STATE.COURSE;
       return;
     }
 
-  }else{
+  } else {
 
-    // PCは左右
-    if(hitBtn(BTN.sound_on_pc,x,y)){
+    if (hitBtn(BTN.sound_on_pc, x, y)) {
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
       state = STATE.COURSE;
       return;
     }
 
-    if(hitBtn(BTN.sound_off_pc,x,y)){
+    if (hitBtn(BTN.sound_off_pc, x, y)) {
       soundOn = false;
       stopBgm();
       state = STATE.COURSE;
       return;
     }
+
   }
 
   return;
 }
+
 
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
@@ -638,10 +633,6 @@ canvas.addEventListener("pointerdown",(e)=>{
   state = STATE.START;
   return;
 }
-
-
-
-
 
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
