@@ -614,17 +614,21 @@ if (state === STATE.SOUND) {
 
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
-  if(state===STATE.COURSE){
+if(state===STATE.COURSE){
 
   if(isMobile()){
-    // ⭐ 上：ミラまる / 下：チャーすけ
-    if(y < canvas.height / 2){
-      mode = "mm";
+
+    // ⭐ 境界を下にずらす（0.55 = 画面中央より少し下）
+    const splitY = canvas.height * 0.55;
+
+    if(y < splitY){
+      mode = "mm";   // 上：ミラまる
     }else{
-      mode = "ch";
+      mode = "ch";   // 下：チャーすけ
     }
+
   }else{
-    // ⭐ PCは左右
+    // PCは今まで通り左右
     if(x < canvas.width / 2){
       mode = "mm";
     }else{
@@ -635,6 +639,7 @@ if (state === STATE.SOUND) {
   state = STATE.START;
   return;
 }
+
 
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
