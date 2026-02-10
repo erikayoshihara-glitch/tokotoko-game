@@ -1197,7 +1197,7 @@ function update(){
   const t = performance.now();
   const nowMs = Date.now();
 
-  bgScrollX -= 2;
+  bgScrollX -= curSpeed * 0.25;
   if(bgScrollX <= -canvas.width){
     bgScrollX = 0;
   }
