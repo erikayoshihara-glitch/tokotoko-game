@@ -735,6 +735,7 @@ const GAME_MS = 30_000;
 const gravity   = 1.35;
 const jumpPower = -22;
 const BASE_SPEED = 8;
+const PLAYER_GROUND_OFFSET = isMobile() ? 110 : 20;
 
 let running = false;
 let startAt = 0;
@@ -1082,7 +1083,7 @@ function resetGameCore(){
 
 player = {
   x: isMobile() ? 20 : 100, // ⭐ここ変更
-  y: groundY + (isMobile()?70:10),
+  y: groundY + PLAYER_GROUND_OFFSET,
   w: size,
   h: size,
   vy: 0
@@ -1199,10 +1200,13 @@ function update(){
   player.y += player.vy;
 
   // 地面に吸着
-  if(player.y > groundY){
-    player.y = groundY;
-    player.vy = 0;
-  }
+  const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
+
+if(player.y > playerGroundY){
+  player.y = playerGroundY;
+  player.vy = 0;
+}
+
 
   // スポーン
   spawn();
