@@ -506,6 +506,7 @@ a.volume = 0.85;
 }
 
 
+document.addEventListener("pointerdown", unlockAudioOnce, { once:true });
 
 /* =========================================================
   7) 入力（UIクリック座標 / ゲーム操作）
@@ -530,7 +531,7 @@ function getPointerXY(e){
 
 
 
-function hitBtn(btn,x,y){
+function hitBtn(btn, x, y){
   const nx = x / canvas.width;
   const ny = y / canvas.height;
 
@@ -542,66 +543,68 @@ function hitBtn(btn,x,y){
   );
 }
 
+
 canvas.addEventListener("pointerdown",(e)=>{
 
   unlockAudioOnce();
 
-  const {x,y} = getPointerXY(e);
-
-  if(state===STATE.SOUND){
-
-  const nx = x / canvas.width;
-  const ny = y / canvas.height;
-
-  console.log("SOUND click", { nx, ny });
+  const { x, y } = getPointerXY(e);
 
   // ==========================
-  // 📱 スマホ（縦並び）
+  // 🔊 音あり / 音なし選択
   // ==========================
-  if(isMobile()){
+  if(state === STATE.SOUND){
 
-    if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.66){
-      soundOn = true;
-      playBgm("bgm_common_intro.mp3");
-      state = STATE.COURSE;
-      return;
-    }
+    const nx = x / canvas.width;
+    const ny = y / canvas.height;
 
-    if(nx > 0.2 && nx < 0.8 && ny > 0.68 && ny < 0.76){
-      soundOn = false;
-      stopBgm();
-      state = STATE.COURSE;
-      return;
-    }
+    console.log("SOUND click", { nx, ny });
 
-  }else{
+    // 📱 スマホ（縦）
+    if(isMobile()){
 
-  // ==========================
-  // 💻 PC（横並び）
-  // ==========================
-    if(ny > 0.63 && ny < 0.83){
-
-      // 左＝音あり
-      if(nx > 0.10 && nx < 0.48){
+      // 音あり
+      if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.66){
         soundOn = true;
         playBgm("bgm_common_intro.mp3");
         state = STATE.COURSE;
         return;
       }
 
-      // 右＝音なし
-      if(nx > 0.52 && nx < 0.90){
+      // 音なし
+      if(nx > 0.2 && nx < 0.8 && ny > 0.68 && ny < 0.76){
         soundOn = false;
         stopBgm();
         state = STATE.COURSE;
         return;
       }
+
+    }else{
+
+      // 💻 PC（横）
+      if(ny > 0.63 && ny < 0.83){
+
+        // 左：音あり
+        if(nx > 0.10 && nx < 0.48){
+          soundOn = true;
+          playBgm("bgm_common_intro.mp3");
+          state = STATE.COURSE;
+          return;
+        }
+
+        // 右：音なし
+        if(nx > 0.52 && nx < 0.90){
+          soundOn = false;
+          stopBgm();
+          state = STATE.COURSE;
+          return;
+        }
+      }
     }
+
+    // ⭐ SOUND画面はここで終了
+    return;
   }
-}
-
-
-
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
