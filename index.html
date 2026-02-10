@@ -891,19 +891,41 @@ function makeLightning(){
   return { kind:"lightning", x: canvas.width, y: groundY - 60 - Math.random()*120, w:50, h:50 };
 }
 function makeItem(key){
+
   let y = groundY - 60 - Math.random()*120;
+
   if(key === "ch_station") y = groundY + 10;
   if(key === "lightningBig") y = groundY - 110;
   if(key === "ch_repair" || key === "mm_onigiri") y = groundY - 40;
-  return { type:"item", key, x: canvas.width, y, w:(key==="lightningBig")?64:56, h:(key==="lightningBig")?64:56 };
+
+  return {
+    type:"item",
+    key:key,
+    x: canvas.width,
+    y: y,
+    w:(key==="lightningBig") ? 64 : 56,
+    h:(key==="lightningBig") ? 64 : 56
+  };
 }
+
 function makeEnemyByRule(){
+
   const yJitter = Math.random()*12;
   let kind;
+
   if(spawnCount % 5 === 0) kind = "trouble";
   else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
   else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
-  return { type:"enemy", kind, x: canvas.width, y: (groundY + 20) - yJitter, w:70, h:70, rot:0 };
+
+  return {
+    type:"enemy",
+    kind,
+    x: canvas.width,
+    y: groundY + 5, // ←あとで下げる調整する
+    w:70,
+    h:70,
+    rot:0
+  };
 }
 
 /* このゲームのレア枠を「1回ずつ」消化 */
@@ -1737,7 +1759,7 @@ const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
 
 // ⭐ 下にずらす量
-const offsetY = isMobile() ? 120 : 40;
+const offsetY = isMobile() ? 70 : 40;
 
 // ⭐ Y座標をちゃんと計算
 const btnY = groundY + (groundSpace - btnH) / 2 + offsetY;
@@ -1831,10 +1853,28 @@ async function boot(){
 
   loadingEl.style.display = "none";
 
-  // 初期状態（音選択UI表示）
   requestAnimationFrame(drawFrame);
 }
+
+// ⭐⭐⭐ iOS音声アンロック（ここに入れる）
+document.addEventListener("pointerdown", () => {
+
+  if(!audioUnlocked){
+    unlockAudioOnce();
+
+    // ダミー再生（Safari解除）
+    const a = new Audio("se_jump.mp3");
+    a.volume = 0;
+    a.playsInline = true;
+    a.setAttribute("playsinline","");
+    a.setAttribute("webkit-playsinline","");
+    a.play().catch(()=>{});
+  }
+
+},{ once:true });
+
 boot();
+
 </script>
 </body>
 </html>
