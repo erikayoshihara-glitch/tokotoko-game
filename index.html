@@ -302,12 +302,11 @@ function fitCanvas(){
   let baseW;
   let baseH;
 
-  // ⭐スマホは縦画面
+  // ⭐スマホは縦 / PCは横
   if(isMobile()){
     baseW = 540;
     baseH = 960;
   }else{
-    // ⭐PCは横画面
     baseW = 960;
     baseH = 540;
   }
@@ -324,30 +323,18 @@ function fitCanvas(){
 
   const scale = Math.min(vw/baseW, vh/baseH);
 
-  if(isMobile()){
-  canvas.style.width  = window.innerWidth + "px";
-　canvas.style.height = window.innerHeight + "px";
-
-}else{
+  // ⭐スマホもPCも同じ計算（←ここが今回の修正ポイント）
   canvas.style.width  = (baseW * scale) + "px";
   canvas.style.height = (baseH * scale) + "px";
 }
-}
-
-
-
-
-
 
 window.addEventListener("resize", fitCanvas);
 window.addEventListener("orientationchange", fitCanvas);
-window.addEventListener("load", fitCanvas); // ←追加
+window.addEventListener("load", fitCanvas);
 
 fitCanvas();
 
-
-const loadingEl = document.getElementById("loading");
-
+const loadingEl   = document.getElementById("loading");
 const hud         = document.getElementById("hud");
 const damageFlash = document.getElementById("damageFlash");
 const feverLayer  = document.getElementById("feverLayer");
@@ -358,6 +345,7 @@ const scoreTxt  = document.getElementById("scoreTxt");
 const hpTxt     = document.getElementById("hpTxt");
 const hpPill    = document.getElementById("hpPill");
 const statusTxt = document.getElementById("statusTxt");
+
 
 /* =========================================================
   5) 画像ロード
@@ -914,7 +902,7 @@ function makeEnemyByRule(){
     type:"enemy",
     kind,
     x: canvas.width,
-    y: groundY + 40, // ←あとで下げる調整する
+    y: groundY + 50, 
     w:70,
     h:70,
     rot:0
