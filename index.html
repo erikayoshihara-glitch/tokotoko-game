@@ -730,10 +730,11 @@ document.addEventListener("keydown",(e)=>{
 const GAME_MS = 30_000;
 
 
-const gravity   = 1.35;
+const gravity = 1.6; // ← 少しだけ重く
 function getJumpPower(){
-  return isMobile() ? -28 : -22; 
+  return isMobile() ? -25 : -21; 
 }
+
 const BASE_SPEED = 9.2;
 const PLAYER_GROUND_OFFSET = isMobile() ? 50 : 20;
 
