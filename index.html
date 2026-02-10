@@ -874,11 +874,16 @@ function makeLightning(){
 }
 function makeItem(key){
 
-  let y = groundY - 60 - Math.random()*120;
+  // ⭐ PC/SPで位置パラメータを分離
+  const Y_BASE = isMobile() ? 120 : 60;
+  const Y_RAND = isMobile() ? 180 : 120;
 
-  if(key === "ch_station") y = groundY + 10;
-  if(key === "lightningBig") y = groundY - 110;
-  if(key === "ch_repair" || key === "mm_onigiri") y = groundY - 40;
+  let y = groundY - Y_BASE - Math.random()*Y_RAND;
+
+  // ===== 個別調整 =====
+  if(key === "ch_station") y = groundY + (isMobile()?30:10);
+  if(key === "lightningBig") y = groundY - (isMobile()?160:110);
+  if(key === "ch_repair" || key === "mm_onigiri") y = groundY - (isMobile()?80:40);
 
   return {
     type:"item",
@@ -889,6 +894,7 @@ function makeItem(key){
     h:(key==="lightningBig") ? 64 : 56
   };
 }
+
 
 function makeEnemyByRule(){
 
