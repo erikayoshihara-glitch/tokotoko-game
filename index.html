@@ -733,7 +733,9 @@ const GAME_MS = 30_000;
 
 
 const gravity   = 1.35;
-const jumpPower = -22;
+function getJumpPower(){
+  return isMobile() ? -28 : -22; 
+}
 const BASE_SPEED = 8;
 const PLAYER_GROUND_OFFSET = isMobile() ? 50 : 20;
 
@@ -1071,7 +1073,7 @@ function jump(){
   const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
 
   if(player.y === playerGroundY){
-    player.vy = jumpPower;
+    player.vy = getJumpPower();
     playSE("jump");
   }
 }
