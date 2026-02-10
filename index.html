@@ -1067,12 +1067,15 @@ function spawn(){
 /* 操作 */
 function jump(){
   if(!running) return;
-  // 地面ピッタリでのみジャンプ（ズレ防止：地面に吸着してるので == でOK）
-  if(player.y === groundY){
+
+  const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
+
+  if(player.y === playerGroundY){
     player.vy = jumpPower;
     playSE("jump");
   }
 }
+
 
 /* 初期化 */
 function resetGameCore(){
