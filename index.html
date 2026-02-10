@@ -553,56 +553,42 @@ canvas.addEventListener("pointerdown",(e)=>{
   // ==========================
   if(state === STATE.SOUND){
 
-    const nx = x / canvas.width;
-    const ny = y / canvas.height;
+  if(isMobile()){
 
-    console.log("SOUND click", { nx, ny });
-
-    // 📱 スマホ（縦）
-    if(isMobile()){
-
-      // 音あり
-      if(nx > 0.2 && nx < 0.8 && ny > 0.58 && ny < 0.66){
-        soundOn = true;
-        playBgm("bgm_common_intro.mp3");
-        state = STATE.COURSE;
-        return;
-      }
-
-      // 音なし
-      if(nx > 0.2 && nx < 0.8 && ny > 0.68 && ny < 0.76){
-        soundOn = false;
-        stopBgm();
-        state = STATE.COURSE;
-        return;
-      }
-
-    }else{
-
-      // 💻 PC（横）
-      if(ny > 0.63 && ny < 0.83){
-
-        // 左：音あり
-        if(nx > 0.10 && nx < 0.48){
-          soundOn = true;
-          playBgm("bgm_common_intro.mp3");
-          state = STATE.COURSE;
-          return;
-        }
-
-        // 右：音なし
-        if(nx > 0.52 && nx < 0.90){
-          soundOn = false;
-          stopBgm();
-          state = STATE.COURSE;
-          return;
-        }
-      }
+    if(hitBtn(BTN.sound_on_sp,x,y)){
+      soundOn = true;
+      playBgm("bgm_common_intro.mp3");
+      state = STATE.COURSE;
+      return;
     }
 
-    // ⭐ SOUND画面はここで終了
-    return;
+    if(hitBtn(BTN.sound_off_sp,x,y)){
+      soundOn = false;
+      stopBgm();
+      state = STATE.COURSE;
+      return;
+    }
+
+  }else{
+
+    if(hitBtn(BTN.sound_on_pc,x,y)){
+      soundOn = true;
+      playBgm("bgm_common_intro.mp3");
+      state = STATE.COURSE;
+      return;
+    }
+
+    if(hitBtn(BTN.sound_off_pc,x,y)){
+      soundOn = false;
+      stopBgm();
+      state = STATE.COURSE;
+      return;
+    }
+
   }
+
+  return;
+}
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
@@ -919,7 +905,7 @@ function makeEnemyByRule(){
     type:"enemy",
     kind,
     x: canvas.width,
-    y: groundY + 25, // ←あとで下げる調整する
+    y: groundY + 40, // ←あとで下げる調整する
     w:70,
     h:70,
     rot:0
