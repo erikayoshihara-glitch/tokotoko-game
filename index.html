@@ -925,14 +925,19 @@ function makeItem(key){
   if(key === "lightningBig") y = groundY - (isMobile()?160:110);
   if(key === "ch_repair" || key === "mm_onigiri") y = groundY - (isMobile()?80:40);
 
-  return {
-    type:"item",
-    key:key,
-    x: canvas.width,
-    y: y,
-    w:(key==="lightningBig") ? 64 : 56,
-    h:(key==="lightningBig") ? 64 : 56
-  };
+    // ⭐ スマホだけ少し大きく
+const itemSize = isMobile() ? 66 : 56;
+const bigSize  = isMobile() ? 74 : 64;
+
+return {
+  type:"item",
+  key:key,
+  x: canvas.width,
+  y: y,
+  w:(key==="lightningBig") ? bigSize : itemSize,
+  h:(key==="lightningBig") ? bigSize : itemSize
+};
+
 }
 
 
