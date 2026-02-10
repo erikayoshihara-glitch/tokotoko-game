@@ -1175,101 +1175,132 @@ enemies.forEach(en => {
     if(hit(player, l)){
       score += 10;
       playSE("lightning");
-      if(Math.random() < 0.10) say("⚡ いいね！", 800);
+      if(Math.random() < 0.10) talk("lightning");
       return false;
     }
     return l.x > -60;
   });
 
-  // アイテム取得（モード別）
-  items = items.filter(it=>{
-    if(hit(player, it)){
-      // 共通：大⚡
-      if(it.key === "lightningBig"){
-        score += 50;
-        playSE("lightning");
-        say("大⚡ どーん！", 900);
-        return false;
-      }
-      if(it.key === "event_fever"){
-  playSE("itemRare");
-  startFever();
-  return false;
+
+function say(text, duration=1200){
+  comment.text = text;
+  comment.until = performance.now() + duration;
 }
 
+  // アイテム取得（モード別）
+  items = items.filter(it=>{
+  if(hit(player, it)){
 
-
-      if(mode==="ch"){
-        if(it.key === "ch_repair" || it.key === "ch_station"){
-          // 🛠/⛽ 回復（どっちも同じSE＝特別アイテム枠に合わせるなら itemCommon）
-          playSE("itemCommon");
-          const before = hp;
-          hp = clamp(hp + 1, 0, 3);
-          if(hp !== before){
-            popHP();
-            popups.push({ x: player.x + player.w/2 + 10, y: player.y - 10, text: "+1", life: 40 });
-            say(it.key==="ch_station" ? "⛽ 回復！" : "🛠 回復！", 850);
-          }else{
-            say("満タン！", 850);
-          }
-        }
-
-        if(it.key === "ch_curry"){
-          speedUntil = t + 4200;
-          playSE("itemRare"); // 🍛
-          say("🍛 スピードUP！", 900);
-        }
-
-        if(it.key === "ch_compass"){
-          enemyRateDownUntil = t + 5200;
-          playSE("itemCommon"); // 🧭
-          say("🧭 敵DOWN！", 900);
-        }
-
-        if(it.key === "ch_map"){
-          mapRevealUntil = t + 4800;
-          playSE("itemCommon"); // 🗺
-          say("🗺 先読み！", 900);
-        }
-
-      }else{
-        // mm
-        if(it.key === "mm_onigiri"){
-          playSE("itemCommon"); // 🍙
-          const before = hp;
-          hp = clamp(hp + 1, 0, 3);
-          if(hp !== before){
-            popHP();
-            popups.push({ x: player.x + player.w/2 + 10, y: player.y - 10, text: "+1", life: 40 });
-            say("🍙 回復！", 850);
-          }else{
-            say("満タン！", 850);
-          }
-        }
-
-        if(it.key === "mm_dango"){
-          speedUntil = t + 4200;
-          playSE("itemCommon"); // 🍡（指定に合わせて itemCommon）
-          say("🍡 スピードUP！", 900);
-        }
-
-        if(it.key === "mm_tea"){
-          enemyRateDownUntil = t + 5200;
-          playSE("itemRare"); // 🍵
-          say("🍵 敵DOWN！", 900);
-        }
-
-        if(it.key === "mm_senbei"){
-          shieldUntilHit = true; // 1回だけ無効
-          playSE("itemCommon"); // 🍘
-          say("🍘 ガード1回！", 900);
-        }
-      }
-
+    // 共通
+    if(it.key === "lightningBig"){
+      score += 50;
+      playSE("lightning");
+      talk("lightning");
       return false;
     }
-    return it.x > -90;
-  });
+
+    if(it.key === "event_fever"){
+      playSE("itemRare");
+      startFever();
+      talk("fever");
+      return false;
+    }
+
+    // ===== ch =====
+    if(mode==="ch"){
+
+      if(it.key === "ch_repair" || it.key === "ch_station"){
+        playSE("itemCommon");
+        const before = hp;
+        hp = clamp(hp + 1, 0, 3);
+
+        if(hp !== before){
+          popHP();
+          popups.push({
+            x: player.x + player.w/2 + 10,
+            y: player.y - 10,
+            text: "+1",
+            life: 40
+          });
+        }
+
+        talk("heal");
+        return false;
+      }
+
+      if(it.key === "ch_curry"){
+        speedUntil = t + 4200;
+        playSE("itemRare");
+        talk("speed");
+        return false;
+      }
+
+      if(it.key === "ch_compass"){
+        enemyRateDownUntil = t + 5200;
+        playSE("itemCommon");
+        talk("enemyDown");
+        return false;
+      }
+
+      if(it.key === "ch_map"){
+        mapRevealUntil = t + 4800;
+        playSE("itemCommon");
+        talk("map");
+        return false;
+      }
+    }
+
+    // ===== mm =====
+    if(mode==="mm"){
+
+      if(it.key === "mm_onigiri"){
+        playSE("itemCommon");
+
+        const before = hp;
+        hp = clamp(hp + 1, 0, 3);
+
+        if(hp !== before){
+          popHP();
+          popups.push({
+            x: player.x + player.w/2 + 10,
+            y: player.y - 10,
+            text: "+1",
+            life: 40
+          });
+        }
+
+        talk("heal");
+        return false;
+      }
+
+      if(it.key === "mm_dango"){
+        speedUntil = t + 4200;
+        playSE("itemCommon");
+        talk("speed");
+        return false;
+      }
+
+      if(it.key === "mm_tea"){
+        enemyRateDownUntil = t + 5200;
+        playSE("itemRare");
+        talk("enemyDown");
+        return false;
+      }
+
+      if(it.key === "mm_senbei"){
+        shieldUntilHit = true;
+        playSE("itemCommon");
+        talk("guard");
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  return it.x > -90;
+});
+
 
   // 敵衝突
   enemies = enemies.filter(en=>{
@@ -1281,7 +1312,7 @@ enemies.forEach(en => {
       if(mode==="mm" && shieldUntilHit){
         shieldUntilHit = false;
         playSE("itemCommon"); // ガード音（好みで差し替えOK）
-        say("🍘 ガード！", 700);
+        talk("guard");
         return false;
       }
 
@@ -1292,13 +1323,13 @@ enemies.forEach(en => {
       if(en.kind === "traffic"){
         slowUntil = t + 3000;
         playSE("hitTraffic");
-        say("🚗 渋滞〜！", 900);
+        talk("damage");
         return false;
       }
 
       // ダメージ
       hp = clamp(hp - 1, 0, 3);
-      say("あっ！", 650);
+      talk("damage");
 
       if(en.kind === "pitfall"){
         playSE("hitPitfall");
@@ -1337,6 +1368,127 @@ if(enemies.length > 20) enemies.splice(0,5);
   if(hp <= 0) finish(false);
   else if(remain <= 0) finish(true);
 }
+
+
+// ================================
+// ⭐ 上部テロップ表示
+// ================================
+function say(text, duration=1200){
+  comment.text = text;
+  comment.until = performance.now() + duration;
+}
+
+
+// ================================
+// ⭐ キャラ口調トーク（配列対応版）
+// ================================
+function talk(type){
+
+  const MM = {
+    lightning: [
+      "いい感じかも…",
+      "まだいけるね",
+      "順調そう…"
+    ],
+
+    fever: [
+      "なんだかすごそう…",
+      "キラキラしてる…"
+    ],
+
+    heal: [
+      "ちょっと元気になったね",
+      "回復できたみたい"
+    ],
+
+    speed: [
+      "少し急ごうか",
+      "いいペースだね"
+    ],
+
+    map: [
+      "なんとなく分かるかも…",
+      "先が見えるね"
+    ],
+
+    enemyDown: [
+      "危なくなさそう…",
+      "落ち着いていこう"
+    ],
+
+    guard: [
+      "守られてるね",
+      "安心できるかも"
+    ],
+
+    damage: [
+      "だいじょうぶ…？",
+      "ぶつかったね…",
+      "気をつけて…",
+      "うわっ…"
+    ],
+  };
+
+  const CH = {
+    lightning: [
+      "いいね！",
+      "ナイス！",
+      "その調子！"
+    ],
+
+    fever: [
+      "フィーバーだ！",
+      "いくぞー！"
+    ],
+
+    heal: [
+      "回復したよ！",
+      "まだまだいける！"
+    ],
+
+    speed: [
+      "スピードアップ！",
+      "加速だー！"
+    ],
+
+    map: [
+      "敵が見やすくなったよ！",
+      "先が読めるぞ！"
+    ],
+
+    enemyDown: [
+      "敵が減った！",
+      "今がチャンス！"
+    ],
+
+    guard: [
+      "ガード！",
+      "守られてる！"
+    ],
+
+    damage: [
+      "あっ！",
+      "ぶつかった！",
+      "いてっ！",
+      "大丈夫！？",
+      "うわっ！"
+    ],
+  };
+
+  const dict = (mode==="mm") ? MM : CH;
+  const list = dict[type];
+
+  if(!list) return;
+
+  // ⭐ 配列ならランダム表示
+  if(Array.isArray(list)){
+    const txt = list[Math.floor(Math.random()*list.length)];
+    say(txt,900);
+  }else{
+    say(list,900);
+  }
+}
+
 
 /* =========================================================
   9) 描画（状態別）
