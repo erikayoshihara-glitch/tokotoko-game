@@ -553,14 +553,16 @@ canvas.addEventListener("pointerdown",(e)=>{
 
   if(isMobile()){
 
-    if(hitBtn(BTN.sound_on_sp,x,y)){
+    // ⭐ 上半分：音あり
+    if(y < canvas.height / 2){
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
       state = STATE.COURSE;
       return;
     }
 
-    if(hitBtn(BTN.sound_off_sp,x,y)){
+    // ⭐ 下半分：音なし
+    if(y >= canvas.height / 2){
       soundOn = false;
       stopBgm();
       state = STATE.COURSE;
@@ -569,6 +571,7 @@ canvas.addEventListener("pointerdown",(e)=>{
 
   }else{
 
+    // PCは左右
     if(hitBtn(BTN.sound_on_pc,x,y)){
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
@@ -582,24 +585,35 @@ canvas.addEventListener("pointerdown",(e)=>{
       state = STATE.COURSE;
       return;
     }
-
   }
 
   return;
 }
 
+
   // ② コース選択（左=ミラまる、右=チャーすけ）
   if(state===STATE.COURSE){
 
-  if(x < canvas.width/2){
-     mode = "mm";
+  if(isMobile()){
+    // ⭐ 上：ミラまる / 下：チャーすけ
+    if(y < canvas.height / 2){
+      mode = "mm";
+    }else{
+      mode = "ch";
+    }
   }else{
-     mode = "ch";
+    // ⭐ PCは左右
+    if(x < canvas.width / 2){
+      mode = "mm";
+    }else{
+      mode = "ch";
+    }
   }
 
   state = STATE.START;
   return;
 }
+
 
 
 
@@ -898,23 +912,27 @@ function makeItem(key){
 
 function makeEnemyByRule(){
 
-  const yJitter = Math.random()*12;
-  let kind;
+  const yOffset = isMobile() ? 20 : 10; // ←微調整用
 
+  let kind;
   if(spawnCount % 5 === 0) kind = "trouble";
   else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
   else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
+
+  const h = 70;
 
   return {
     type:"enemy",
     kind,
     x: canvas.width,
-    y: groundY + 50, 
+    y: groundY - h + yOffset, // ⭐ 地面に接地
     w:70,
-    h:70,
+    h:h,
     rot:0
   };
 }
+
+
 
 /* このゲームのレア枠を「1回ずつ」消化 */
 function trySpawnPlannedEvent(){
