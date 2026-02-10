@@ -1730,19 +1730,20 @@ if(I.ui_jump && I.ui_jump.ok){
 const groundSpace = canvas.height - groundY;
 
 const btnH = groundSpace * 0.55;
-const btnW = canvas.width * (isMobile()?0.75:0.35);
-
+const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
-const offsetY = isMobile() ? 0 : 40; // ⭐PCだけ下げる量（まず40でOK）
-const btnY = groundY + (groundSpace - btnH) / 2 + offsetY;
 
+// ⭐ 下にずらす量
+const offsetY = isMobile() ? 120 : 40;
+
+// ⭐ Y座標をちゃんと計算
+const btnY = groundY + (groundSpace - btnH) / 2 + offsetY;
 
 ctx.globalAlpha = 0.95;
 ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
 ctx.globalAlpha = 1;
 
-jumpBtnRect = {x:btnX, y:btnY, w:btnW, h:btnH};
-
+jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
 
 }
 }
