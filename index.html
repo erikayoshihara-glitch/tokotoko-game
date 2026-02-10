@@ -506,8 +506,6 @@ a.volume = 0.85;
 }
 
 
-document.addEventListener("pointerdown", unlockAudioOnce, { once:true });
-
 /* =========================================================
   7) 入力（UIクリック座標 / ゲーム操作）
 ========================================================= */
@@ -1523,7 +1521,9 @@ function drawUI(){
   ctx.fillStyle="#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
+
   if(state===STATE.SOUND){
+    unlockAudioOnce(); 
 
     const img = isMobile()?UI.sound_sp:UI.sound;
 
@@ -1855,32 +1855,7 @@ async function boot(){
 requestAnimationFrame(drawFrame);
 }
 
-document.addEventListener("pointerdown", () => {
-  if(!audioUnlocked){
-    unlockAudioOnce();
-  }
-},{ once:true });
-
 boot();
-
-
-// ⭐⭐⭐ iOS音声アンロック（ここに入れる）
-document.addEventListener("pointerdown", () => {
-
-  if(!audioUnlocked){
-    unlockAudioOnce();
-
-    // ⭐ soundOn true の時だけ
-    if(soundOn){
-      const a = new Audio("se_jump.mp3");
-      a.volume = 0;
-      a.playsInline = true;
-      a.play().catch(()=>{});
-    }
-  }
-
-},{ once:true });
-
 
 </script>
 </body>
