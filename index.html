@@ -1852,9 +1852,17 @@ async function boot(){
   keys.forEach((k, idx)=>{ I[k] = loaded[idx]; });
 
   loadingEl.style.display = "none";
-
-  requestAnimationFrame(drawFrame);
+requestAnimationFrame(drawFrame);
 }
+
+document.addEventListener("pointerdown", () => {
+  if(!audioUnlocked){
+    unlockAudioOnce();
+  }
+},{ once:true });
+
+boot();
+
 
 // ⭐⭐⭐ iOS音声アンロック（ここに入れる）
 document.addEventListener("pointerdown", () => {
