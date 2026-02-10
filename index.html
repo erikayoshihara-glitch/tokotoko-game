@@ -1796,6 +1796,7 @@ const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
 // ⭐ 地面下スペース
 const groundSpace = canvas.height - playerGroundY;
 
+// ⭐ サイズ先に作る（←超重要）
 const btnH = groundSpace * 0.55;
 const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
@@ -1803,7 +1804,7 @@ const btnX = (canvas.width - btnW) / 2;
 // ⭐ 下にずらす量
 const offsetY = isMobile() ? 70 : 40;
 
-// ⭐ Y座標（playerGroundY基準に変更）
+// ⭐ Y座標（最後に計算）
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
 
 ctx.globalAlpha = 0.95;
@@ -1811,6 +1812,7 @@ ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
 ctx.globalAlpha = 1;
 
 jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+
 
 
 }
