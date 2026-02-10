@@ -1789,10 +1789,12 @@ if(t < comment.until && comment.text){
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
 if(I.ui_jump && I.ui_jump.ok){
 
-  // ⭐ 横幅だけ指定（高さは画像比率で自動）
-  // ===== JUMPボタン（地面下いっぱいに横長） =====
 
-const groundSpace = canvas.height - groundY;
+// ⭐ キャラ基準の地面
+const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
+
+// ⭐ 地面下スペース
+const groundSpace = canvas.height - playerGroundY;
 
 const btnH = groundSpace * 0.55;
 const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
@@ -1801,14 +1803,15 @@ const btnX = (canvas.width - btnW) / 2;
 // ⭐ 下にずらす量
 const offsetY = isMobile() ? 70 : 40;
 
-// ⭐ Y座標をちゃんと計算
-const btnY = groundY + (groundSpace - btnH) / 2 + offsetY;
+// ⭐ Y座標（playerGroundY基準に変更）
+const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
 
 ctx.globalAlpha = 0.95;
 ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
 ctx.globalAlpha = 1;
 
 jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+
 
 }
 }
