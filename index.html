@@ -921,7 +921,7 @@ function makeEnemyByRule(){
     type:"enemy",
     kind,
     x: canvas.width,
-    y: groundY + 15, // ←あとで下げる調整する
+    y: groundY + 25, // ←あとで下げる調整する
     w:70,
     h:70,
     rot:0
@@ -1862,18 +1862,17 @@ document.addEventListener("pointerdown", () => {
   if(!audioUnlocked){
     unlockAudioOnce();
 
-    // ダミー再生（Safari解除）
-    const a = new Audio("se_jump.mp3");
-    a.volume = 0;
-    a.playsInline = true;
-    a.setAttribute("playsinline","");
-    a.setAttribute("webkit-playsinline","");
-    a.play().catch(()=>{});
+    // ⭐ soundOn true の時だけ
+    if(soundOn){
+      const a = new Audio("se_jump.mp3");
+      a.volume = 0;
+      a.playsInline = true;
+      a.play().catch(()=>{});
+    }
   }
 
 },{ once:true });
 
-boot();
 
 </script>
 </body>
