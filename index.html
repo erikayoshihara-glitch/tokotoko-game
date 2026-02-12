@@ -698,8 +698,6 @@ if(state===STATE.END){
 }
 
 
-
-
 });
 
 document.addEventListener("keydown",(e)=>{
@@ -1195,18 +1193,24 @@ function update(){
 // 物理
 player.vy += gravity;
 
-// ⭐スマホだけジャンプカーブ調整（PCは触らない）
+// 📱スマホ専用チューニング
 if(isMobile()){
+
+  // 上昇中 → 少しだけ伸ばす（アイテム届く高さ）
   if(player.vy < 0){
-    // 上昇中（高さは変えない）
-    player.vy += gravity * -0.25;
-  }else{
-    // 落下中（サクッと着地）
-    player.vy += gravity * 0.8;
+    player.vy -= 0.15;
   }
+
+  // 落下中 → 早く落ちる（敵に当たりにくい）
+  if(player.vy > 0){
+    player.vy += gravity * 0.75;
+  }
+
 }
 
 player.y += player.vy;
+
+
 
 
 
