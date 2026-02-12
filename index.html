@@ -1192,9 +1192,22 @@ function update(){
     bgScrollX = 0;
   }
 
-  // 物理
+// 物理
 player.vy += gravity;
+
+// ⭐スマホだけジャンプカーブ調整（PCは触らない）
+if(isMobile()){
+  if(player.vy < 0){
+    // 上昇中（高さは変えない）
+    player.vy += gravity * -0.25;
+  }else{
+    // 落下中（サクッと着地）
+    player.vy += gravity * 0.8;
+  }
+}
+
 player.y += player.vy;
+
 
 
 
