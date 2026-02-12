@@ -1204,10 +1204,14 @@ function update(){
     bgScrollX = 0;
   }
 
-
   // 物理
-  player.vy += gravity;
-  player.y += player.vy;
+player.vy += gravity;
+
+// ⭐スマホだけ空中減速（ここに入れる）
+if(isMobile()) player.vy *= 0.97;
+
+player.y += player.vy;
+
 
   // 地面に吸着
   const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
