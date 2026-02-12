@@ -1193,10 +1193,9 @@ function update(){
   }
 
   // 物理
-// ⭐スマホだけ落下を少し速く
-if(isMobile() && player.vy > 0){
-  player.vy += 0.35;
-}
+player.vy += gravity;
+player.y += player.vy;
+
 
 
   // 地面に吸着
