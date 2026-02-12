@@ -1223,8 +1223,15 @@ if(player.y > playerGroundY){
 
   // 速度
   let curSpeed = BASE_SPEED;
-  if(t < speedUntil) curSpeed *= 1.25;
-  if(t < slowUntil)  curSpeed *= 0.72;
+
+// ⭐スマホ補正（超重要）
+if(isMobile()){
+  curSpeed *= 1.35;   // ←ここがサクサク化の核心
+}
+
+if(t < speedUntil) curSpeed *= 1.25;
+if(t < slowUntil)  curSpeed *= 0.72;
+
 // 移動（左へ流す）
 lightnings.forEach(l => { l.x -= curSpeed; });
 
