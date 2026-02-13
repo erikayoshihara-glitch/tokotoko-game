@@ -1226,15 +1226,21 @@ if(player.y > playerGroundY){
   spawn();
 
   // 速度
-  let curSpeed = BASE_SPEED;
+let curSpeed = BASE_SPEED;
 
-// ⭐スマホ補正（超重要）
+// ⭐ チャーすけコースだけ難易度アップ（全体高速化）
+if(mode === "ch"){
+  curSpeed *= 1.22;   // ←ここ好きな倍率にしてOK（おすすめ1.15〜1.3）
+}
+
+// ⭐スマホ補正
 if(isMobile()){
-  curSpeed *= 1.35;   // ←ここがサクサク化の核心
+  curSpeed *= 1.35;
 }
 
 if(t < speedUntil) curSpeed *= 1.25;
 if(t < slowUntil)  curSpeed *= 0.72;
+
 
 // 移動（左へ流す）
 lightnings.forEach(l => { l.x -= curSpeed; });
