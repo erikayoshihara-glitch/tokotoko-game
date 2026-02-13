@@ -779,8 +779,15 @@ function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
 /* 当たり判定（安定版） */
 function hit(a, b){
-  const marginA = 14;
-  const marginB = 10;
+  let marginA = 14;
+let marginB = 10;
+
+// 🔥 上級者：チャーすけだけ少し厳しく
+if(mode === "ch"){
+  marginA = 10;
+  marginB = 6;
+}
+
   return (
     a.x + marginA < b.x + b.w - marginB &&
     a.x + a.w - marginA > b.x + marginB &&
@@ -911,7 +918,7 @@ function makeItem(key){
 
   // ⭐ PC/SPで位置パラメータを分離
   // ⭐チャーすけだけアイテム少し低めに
-let Y_BASE = isMobile() ? 120 : 60;
+let Y_BASE = isMobile() ? 100 : 60;
 let Y_RAND = isMobile() ? 180 : 120;
 
 if(mode === "ch"){
@@ -926,9 +933,9 @@ if(mode === "ch"){
   if(key === "ch_station") y = groundY + (isMobile()?30:10);
   if(key === "lightningBig"){
   if(mode === "ch"){
-    y = groundY - (isMobile()?120:85);   // ⭐チャーすけだけ低め
+    y = groundY - (isMobile()?120:70);   // ⭐チャーすけだけ低め
   }else{
-    y = groundY - (isMobile()?160:110);  // ミラまるはそのまま
+    y = groundY - (isMobile()?160:100);  // ミラまるはそのまま
   }
 }
 
@@ -1036,6 +1043,17 @@ function spawn(){
   const inFever = (t < feverUntil);
 
   let interval = inFever ? 420 : 1200;
+
+// 🔥 チャーすけ後半ラッシュ（残り8秒）
+if(mode === "ch"){
+
+  const elapsed = Date.now() - startAt;
+
+  if(elapsed > 22000){
+    interval *= 0.55;   // ← 出現スピード爆上げ（おすすめ値）
+  }
+}
+
 
 // ⭐チャーすけだけ敵出現早く
 if(mode === "ch"){
@@ -1262,6 +1280,22 @@ if(player.y > playerGroundY){
 
   // 速度
 let curSpeed = BASE_SPEED;
+
+// 🔥 上級者：チャーすけ後半ブースト（30秒用）
+if(mode === "ch"){
+
+  const elapsed = Date.now() - startAt;
+
+  if(elapsed > 15000){   // ⭐15秒から少し速く
+    curSpeed *= 1.15;
+  }
+
+  if(elapsed > 22000){   // ⭐ラスト8秒くらい激しく
+    curSpeed *= 1.12;
+  }
+}
+
+
 
 // ⭐ チャーすけコースだけ難易度アップ（全体高速化）
 if(mode === "ch"){
