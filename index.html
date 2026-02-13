@@ -718,8 +718,15 @@ const GAME_MS = 30_000;
 
 const gravity = isMobile() ? 1.9 : 1.6;
 function getJumpPower(){
+
+  // ⭐チャーすけだけ少し重たいジャンプ
+  if(mode === "ch"){
+    return isMobile() ? -26 : -22;
+  }
+
   return isMobile() ? -28 : -24;
 }
+
 
 
 const BASE_SPEED = 9.2;
@@ -1236,7 +1243,7 @@ let curSpeed = BASE_SPEED;
 
 // ⭐ チャーすけコースだけ難易度アップ（全体高速化）
 if(mode === "ch"){
-  curSpeed *= 1.22;   // ←ここ好きな倍率にしてOK（おすすめ1.15〜1.3）
+  curSpeed *= 1.28;   // ←ここ好きな倍率にしてOK（おすすめ1.15〜1.3）
 }
 
 // ⭐スマホ補正
