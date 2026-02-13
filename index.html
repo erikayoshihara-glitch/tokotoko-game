@@ -924,7 +924,14 @@ if(mode === "ch"){
 
   // ===== 個別調整 =====
   if(key === "ch_station") y = groundY + (isMobile()?30:10);
-  if(key === "lightningBig") y = groundY - (isMobile()?160:110);
+  if(key === "lightningBig"){
+  if(mode === "ch"){
+    y = groundY - (isMobile()?120:85);   // ⭐チャーすけだけ低め
+  }else{
+    y = groundY - (isMobile()?160:110);  // ミラまるはそのまま
+  }
+}
+
   if(key === "ch_repair" || key === "mm_onigiri") y = groundY - (isMobile()?80:40);
 
     // ⭐ スマホだけ少し大きく
@@ -1213,12 +1220,20 @@ function update(){
 // 物理
 player.vy += gravity;
 
-if(isMobile()){
-
   // ⭐ 上昇中だけほんの少し伸ばす（←ここが重要）
+  if(isMobile()){
+
+  // ⭐チャーすけだけ少しだけ上昇伸ばす
   if(player.vy < 0){
-    player.vy += gravity * -0.22;   
+
+    if(mode === "ch"){
+      player.vy += gravity * -0.34;  // ← -0.22 → -0.30
+    }else{
+      player.vy += gravity * -0.22;
+    }
+
   }
+
   // ⭐ 落下は今の速さを維持
   else{
     player.vy += gravity * 0.75;
