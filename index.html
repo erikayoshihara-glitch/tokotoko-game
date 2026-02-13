@@ -910,8 +910,15 @@ function makeLightning(){
 function makeItem(key){
 
   // ⭐ PC/SPで位置パラメータを分離
-  const Y_BASE = isMobile() ? 120 : 60;
-  const Y_RAND = isMobile() ? 180 : 120;
+  // ⭐チャーすけだけアイテム少し低めに
+let Y_BASE = isMobile() ? 120 : 60;
+let Y_RAND = isMobile() ? 180 : 120;
+
+if(mode === "ch"){
+  Y_BASE -= 20;   // ← 全体を少し下げる
+  Y_RAND -= 40;   // ← 上に出す幅を減らす
+}
+
 
   let y = groundY - Y_BASE - Math.random()*Y_RAND;
 
