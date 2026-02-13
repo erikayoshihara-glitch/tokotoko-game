@@ -1281,17 +1281,13 @@ if(player.y > playerGroundY){
   // 速度
 let curSpeed = BASE_SPEED;
 
-// 🔥 上級者：チャーすけ後半ブースト（30秒用）
+  // 🔥 チャーすけ後半ブースト（一定速度）
 if(mode === "ch"){
 
   const elapsed = Date.now() - startAt;
 
-  if(elapsed > 15000){   // ⭐15秒から少し速く
+  if(elapsed > 15000){   // ⭐15秒以降ずっと同じ速度
     curSpeed *= 1.15;
-  }
-
-  if(elapsed > 22000){   // ⭐ラスト8秒くらい激しく
-    curSpeed *= 1.12;
   }
 }
 
