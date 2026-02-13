@@ -1014,7 +1014,13 @@ function spawn(){
   const t = performance.now();
   const inFever = (t < feverUntil);
 
-  const interval = inFever ? 420 : 1200;
+  let interval = inFever ? 420 : 1200;
+
+// ⭐チャーすけだけ敵出現早く
+if(mode === "ch"){
+  interval *= 0.8;
+}
+
   if(now - lastSpawn < interval) return;
   lastSpawn = now;
 
