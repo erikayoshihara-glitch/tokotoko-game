@@ -779,15 +779,8 @@ function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
 /* 当たり判定（安定版） */
 function hit(a, b){
-  let marginA = 14;
-let marginB = 10;
-
-// 🔥 上級者：チャーすけだけ少し厳しく
-if(mode === "ch"){
-  marginA = 10;
-  marginB = 6;
-}
-
+  const marginA = 14;
+  const marginB = 10;
   return (
     a.x + marginA < b.x + b.w - marginB &&
     a.x + a.w - marginA > b.x + marginB &&
@@ -918,7 +911,7 @@ function makeItem(key){
 
   // ⭐ PC/SPで位置パラメータを分離
   // ⭐チャーすけだけアイテム少し低めに
-let Y_BASE = isMobile() ? 100 : 60;
+let Y_BASE = isMobile() ? 120 : 60;
 let Y_RAND = isMobile() ? 180 : 120;
 
 if(mode === "ch"){
@@ -931,14 +924,7 @@ if(mode === "ch"){
 
   // ===== 個別調整 =====
   if(key === "ch_station") y = groundY + (isMobile()?30:10);
-  if(key === "lightningBig"){
-  if(mode === "ch"){
-    y = groundY - (isMobile()?120:70);   // ⭐チャーすけだけ低め
-  }else{
-    y = groundY - (isMobile()?160:100);  // ミラまるはそのまま
-  }
-}
-
+  if(key === "lightningBig") y = groundY - (isMobile()?160:110);
   if(key === "ch_repair" || key === "mm_onigiri") y = groundY - (isMobile()?80:40);
 
     // ⭐ スマホだけ少し大きく
@@ -1043,17 +1029,6 @@ function spawn(){
   const inFever = (t < feverUntil);
 
   let interval = inFever ? 420 : 1200;
-
-// 🔥 チャーすけ後半ラッシュ（残り8秒）
-if(mode === "ch"){
-
-  const elapsed = Date.now() - startAt;
-
-  if(elapsed > 22000){
-    interval *= 0.55;   // ← 出現スピード爆上げ（おすすめ値）
-  }
-}
-
 
 // ⭐チャーすけだけ敵出現早く
 if(mode === "ch"){
@@ -1238,20 +1213,12 @@ function update(){
 // 物理
 player.vy += gravity;
 
+if(isMobile()){
+
   // ⭐ 上昇中だけほんの少し伸ばす（←ここが重要）
-  if(isMobile()){
-
-  // ⭐チャーすけだけ少しだけ上昇伸ばす
   if(player.vy < 0){
-
-    if(mode === "ch"){
-      player.vy += gravity * -0.34;  // ← -0.22 → -0.30
-    }else{
-      player.vy += gravity * -0.22;
-    }
-
+    player.vy += gravity * -0.22;   
   }
-
   // ⭐ 落下は今の速さを維持
   else{
     player.vy += gravity * 0.75;
@@ -1280,18 +1247,6 @@ if(player.y > playerGroundY){
 
   // 速度
 let curSpeed = BASE_SPEED;
-
-  // 🔥 チャーすけ後半ブースト（一定速度）
-if(mode === "ch"){
-
-  const elapsed = Date.now() - startAt;
-
-  if(elapsed > 15000){   // ⭐15秒以降ずっと同じ速度
-    curSpeed *= 1.15;
-  }
-}
-
-
 
 // ⭐ チャーすけコースだけ難易度アップ（全体高速化）
 if(mode === "ch"){
