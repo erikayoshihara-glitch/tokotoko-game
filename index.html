@@ -1865,7 +1865,7 @@ if(t < comment.until && comment.text){
   // ⭐ スマホ → ジャンプボタンの上に表示
   if(isMobile() && jumpBtnRect){
 
-    boxY = jumpBtnRect.y - 55; // ← ボタンとの距離（調整OK）
+    boxY = jumpBtnRect.y - 45; // ← ボタンとの距離（調整OK）
     textY = boxY + 25;
 
   }else{
@@ -1905,7 +1905,7 @@ const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
 
 // ⭐ 下にずらす量
-const offsetY = isMobile() ? 40 : 40;
+const offsetY = isMobile() ? 60 : 40;
 
 // ⭐ Y座標（最後に計算）
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
