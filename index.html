@@ -1825,14 +1825,34 @@ items.forEach(it=>{
   }
 
   // +1ポップ
-  popups.forEach(p=>{
-    ctx.save();
-    ctx.globalAlpha = p.life / 40;
-    ctx.font = "18px sans-serif";
-    ctx.fillStyle = "#27ae60";
-    ctx.fillText(p.text, p.x, p.y);
-    ctx.restore();
-  });
+popups.forEach(p=>{
+
+  ctx.save();
+
+  const alpha = p.life / 40;
+  const scale = 1 + (1 - alpha) * 0.4; // 少し大きくなる演出
+
+  ctx.globalAlpha = alpha;
+
+  ctx.translate(p.x, p.y);
+  ctx.scale(scale, scale);
+
+  // ⭐ 文字大きく
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+
+  // ⭐ 黒ふち（超重要）
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#000";
+  ctx.strokeText(p.text, 0, 0);
+
+  // ⭐ 白文字
+  ctx.fillStyle = "#fff";
+  ctx.fillText(p.text, 0, 0);
+
+  ctx.restore();
+});
+
 
 // ⭐ テロップ表示（PC=上 / スマホ=ジャンプボタン上）
 if(t < comment.until && comment.text){
@@ -1885,7 +1905,7 @@ const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
 
 // ⭐ 下にずらす量
-const offsetY = isMobile() ? 70 : 40;
+const offsetY = isMobile() ? 40 : 40;
 
 // ⭐ Y座標（最後に計算）
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
