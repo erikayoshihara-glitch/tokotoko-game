@@ -760,6 +760,10 @@ let used = null;
 
 let player = {};
 let score = 0;
+let combo = 0;
+let comboText = "";
+let comboTextUntil = 0;
+let comboTimeout = 0;
 let hp = 3;
 
 let lightnings = [];
@@ -1056,12 +1060,70 @@ function trySpawnPlannedEvent(){
   return false;
 }
 
+// ⭐ ⚡配置パターン（ゲームっぽい）
+function spawnLightningPattern(){
+
+  const baseX = canvas.width;
+
+  const r = Math.random();
+
+  // ===== 地面ライン（初心者向け）
+  if(r < 0.35){
+
+    for(let i=0;i<3;i++){
+      lightnings.push({
+        kind:"lightning",
+        x: baseX + i*80,
+        y: groundY + 20,
+        w:50,h:50
+      });
+    }
+    return;
+  }
+
+  // ===== 縦ライン（ジャンプ用）
+  if(r < 0.65){
+
+    const y = groundY - 60 - Math.random()*120;
+
+    for(let i=0;i<2;i++){
+      lightnings.push({
+        kind:"lightning",
+        x: baseX,
+        y: y - i*80,
+        w:50,h:50
+      });
+    }
+    return;
+  }
+
+  // ===== ななめライン（気持ちいい）
+  if(r < 0.9){
+
+    const startY = groundY - 60 - Math.random()*120;
+
+    for(let i=0;i<3;i++){
+      lightnings.push({
+        kind:"lightning",
+        x: baseX + i*70,
+        y: startY - i*40,
+        w:50,h:50
+      });
+    }
+    return;
+  }
+
+  // ===== 単発（普通）
+  lightnings.push(makeLightning());
+}
+
+
 function spawn(){
   const now = Date.now();
   const t = performance.now();
   const inFever = (t < feverUntil);
 
-  let interval = inFever ? 420 : 1200;
+  let interval = inFever ? 350 : 800;
 
 
   if(now - lastSpawn < interval) return;
@@ -1080,7 +1142,7 @@ function spawn(){
   }
 
   // 通常：敵 or アイテム or ⚡
-  const enemyChanceBase = 0.52;
+  const enemyChanceBase = 0.35;
   const enemyChance = (t < enemyRateDownUntil) ? 0.30 : enemyChanceBase;
 
   if(Math.random() < enemyChance){
@@ -1090,19 +1152,18 @@ function spawn(){
     const every = MODE[mode].itemEvery;
 
     if(mode==="ch"){
-      // ch：毎回枠もちゃんと出る（稲妻だけにならない）
-      if(r < 0.16) items.push(makeItem(every[0]));         // 🛠
-      else if(r < 0.28) items.push(makeItem(every[1]));    // 🗺
-      else if(r < 0.40) items.push(makeItem(every[2]));    // 🧭
-      else if(r < 0.88) lightnings.push(makeLightning());  // ⚡
-      else lightnings.push(makeLightning());
-    }else{
-      // mm：🍙/🍡を拾って楽しむ比率高め
-      if(r < 0.22) items.push(makeItem(every[0]));         // 🍙
-      else if(r < 0.44) items.push(makeItem(every[1]));    // 🍡
-      else if(r < 0.92) lightnings.push(makeLightning());  // ⚡
-      else lightnings.push(makeLightning());
-    }
+  if(r < 0.16) items.push(makeItem(every[0]));
+  else if(r < 0.28) items.push(makeItem(every[1]));
+  else if(r < 0.40) items.push(makeItem(every[2]));
+  else if(r < 0.92) spawnLightningPattern();
+  else spawnLightningPattern();
+}
+else{
+  if(r < 0.22) items.push(makeItem(every[0]));
+  else if(r < 0.44) items.push(makeItem(every[1]));
+  else if(r < 0.92) spawnLightningPattern();
+  else spawnLightningPattern();
+}
   }
 }
 
@@ -1305,19 +1366,31 @@ enemies.forEach(en => {
   popups.forEach(p => { p.y -= 0.6; p.life--; });
   popups = popups.filter(p => p.life > 0);
 
-  // ⚡取得（当たった時だけ加算）
+  // ⭐⚡取得（コンボ対応）
 lightnings = lightnings.filter(l => {
 
   if(hit(player, l)){
 
-    score += 10;
+    combo++;
+    comboTimeout = performance.now() + 2000; // 2秒以内なら継続
+
+    // ⭐ 3コンボ以上で表示
+if(combo >= 3){
+  comboText = combo + " COMBO!";
+  comboTextUntil = performance.now() + 800;
+}
+
+
+    const addScore = 10 * combo;
+    score += addScore;
+
     playSE("lightning");
 
     // ⭐ キャラ上にポイント表示
     popups.push({
       x: player.x + player.w/2 - 10,
       y: player.y - 10,
-      text: "+10",
+      text: "+" + addScore,
       life: 40
     });
 
@@ -1328,6 +1401,7 @@ lightnings = lightnings.filter(l => {
 
   return l.x > -60;
 });
+
 
 
 
@@ -1504,6 +1578,13 @@ function say(text, duration=1200){
 
   // 状態表示
   setStatus();
+
+// ⭐ コンボリセット
+if(performance.now() > comboTimeout){
+  combo = 0;
+  comboText = "";
+}
+
 
 
 if(lightnings.length > 25) lightnings.splice(0,5);
