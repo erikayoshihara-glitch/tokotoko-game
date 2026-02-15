@@ -110,6 +110,28 @@ height:auto;
     color:#111;
     font-weight:900;
   }
+
+  .bigTime{
+  position:fixed;
+  right:16px;
+  top:12px;
+  z-index:30;
+
+  font-size:56px;
+  font-weight:900;
+  color:#111;
+
+  background:rgba(255,255,255,.8);
+  padding:8px 16px;
+  border-radius:16px;
+
+  display:none;
+}
+
+.bigTime.show{
+  display:block;
+}
+
 </style>
 </head>
 
@@ -120,6 +142,7 @@ height:auto;
 <div class="fever" id="feverLayer"></div>
 
 <div class="hud" id="hud">
+  <div class="bigTime" id="bigTime">30</div>
   <div class="pill">残り <span id="timeTxt">30.0</span>s</div>
   <div class="pill">⚡ <span id="scoreTxt">0</span></div>
   <div class="pill" id="hpPill">🔋 <span id="hpTxt">🔋🔋🔋</span></div>
@@ -356,6 +379,8 @@ const scoreTxt  = document.getElementById("scoreTxt");
 const hpTxt     = document.getElementById("hpTxt");
 const hpPill    = document.getElementById("hpPill");
 const statusTxt = document.getElementById("statusTxt");
+const bigTimeEl = document.getElementById("bigTime");
+
 
 
 /* =========================================================
@@ -718,15 +743,8 @@ const GAME_MS = 30_000;
 
 const gravity = isMobile() ? 1.9 : 1.6;
 function getJumpPower(){
-
-  // ⭐チャーすけだけ少し重たいジャンプ
-  if(mode === "ch"){
-    return isMobile() ? -26 : -22;
-  }
-
   return isMobile() ? -28 : -24;
 }
-
 
 
 const BASE_SPEED = 9.2;
@@ -791,10 +809,16 @@ function hit(a, b){
 
 /* HUD */
 function updateHUD(remainMs){
-  timeTxt.textContent = (remainMs/1000).toFixed(1);
+
+  const sec = Math.max(0, remainMs/1000);
+
+  timeTxt.textContent = sec.toFixed(1);
+  bigTimeEl.textContent = Math.ceil(sec); // 大きいタイム
+
   scoreTxt.textContent = score;
   hpTxt.textContent = "🔋".repeat(hp) + "▫️".repeat(3-hp);
 }
+
 
 function flashDamage(){
   damageFlash.classList.add("show");
@@ -804,11 +828,6 @@ function flashDamage(){
 function popHP(){
   hpPill.classList.add("hp-pop");
   setTimeout(()=>hpPill.classList.remove("hp-pop"), 280);
-}
-
-function say(text, duration=1200){
-  comment.text = text;
-  comment.until = performance.now() + duration;
 }
 
 function setStatus(){
@@ -913,11 +932,6 @@ function makeItem(key){
   // ⭐チャーすけだけアイテム少し低めに
 let Y_BASE = isMobile() ? 120 : 60;
 let Y_RAND = isMobile() ? 180 : 120;
-
-if(mode === "ch"){
-  Y_BASE -= 20;   // ← 全体を少し下げる
-  Y_RAND -= 40;   // ← 上に出す幅を減らす
-}
 
 
   let y = groundY - Y_BASE - Math.random()*Y_RAND;
@@ -1030,10 +1044,6 @@ function spawn(){
 
   let interval = inFever ? 420 : 1200;
 
-// ⭐チャーすけだけ敵出現早く
-if(mode === "ch"){
-  interval *= 0.8;
-}
 
   if(now - lastSpawn < interval) return;
   lastSpawn = now;
@@ -1248,11 +1258,6 @@ if(player.y > playerGroundY){
   // 速度
 let curSpeed = BASE_SPEED;
 
-// ⭐ チャーすけコースだけ難易度アップ（全体高速化）
-if(mode === "ch"){
-  curSpeed *= 1.28;   // ←ここ好きな倍率にしてOK（おすすめ1.15〜1.3）
-}
-
 // ⭐スマホ補正
 if(isMobile()){
   curSpeed *= 1.35;
@@ -1282,15 +1287,29 @@ enemies.forEach(en => {
   popups = popups.filter(p => p.life > 0);
 
   // ⚡取得（当たった時だけ加算）
-  lightnings = lightnings.filter(l => {
-    if(hit(player, l)){
-      score += 10;
-      playSE("lightning");
-      if(Math.random() < 0.10) talk("lightning");
-      return false;
-    }
-    return l.x > -60;
-  });
+lightnings = lightnings.filter(l => {
+
+  if(hit(player, l)){
+
+    score += 10;
+    playSE("lightning");
+
+    // ⭐ キャラ上にポイント表示
+    popups.push({
+      x: player.x + player.w/2 - 10,
+      y: player.y - 10,
+      text: "+10",
+      life: 40
+    });
+
+    if(Math.random() < 0.10) talk("lightning");
+
+    return false;
+  }
+
+  return l.x > -60;
+});
+
 
 
 function say(text, duration=1200){
@@ -1478,6 +1497,7 @@ if(enemies.length > 20) enemies.splice(0,5);
 
   if(hp <= 0) finish(false);
   else if(remain <= 0) finish(true);
+else if(remain <= 0) finish(true);
 }
 
 
@@ -1814,24 +1834,40 @@ items.forEach(it=>{
     ctx.restore();
   });
 
-  // ⭐ 上部テロップ表示（吹き出し代替）
+// ⭐ テロップ表示（PC=上 / スマホ=ジャンプボタン上）
 if(t < comment.until && comment.text){
 
   ctx.save();
 
-  // 半透明黒バー
+  let boxY;
+  let textY;
+
+  // ⭐ スマホ → ジャンプボタンの上に表示
+  if(isMobile() && jumpBtnRect){
+
+    boxY = jumpBtnRect.y - 55; // ← ボタンとの距離（調整OK）
+    textY = boxY + 25;
+
+  }else{
+    // ⭐ PC → 今までと同じ位置
+    boxY = 120;
+    textY = 145;
+  }
+
+  // 背景バー
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(0,120,canvas.width,40);
+  ctx.fillRect(0, boxY, canvas.width, 40);
 
   // テキスト
   ctx.fillStyle = "#fff";
   ctx.font = "bold 16px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(comment.text, canvas.width/2,145);
+  ctx.fillText(comment.text, canvas.width/2, textY);
 
   ctx.restore();
 }
+
 
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
 if(I.ui_jump && I.ui_jump.ok){
