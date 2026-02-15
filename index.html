@@ -747,7 +747,7 @@ function getJumpPower(){
 }
 
 
-const BASE_SPEED = 9.2;
+const BASE_SPEED = 4.5;
 const PLAYER_GROUND_OFFSET = isMobile() ? 30 : 20;
 
 let running = false;
@@ -1342,7 +1342,7 @@ let curSpeed = BASE_SPEED;
 
 // ⭐スマホ補正
 if(isMobile()){
-  curSpeed *= 1.35;
+  curSpeed *= 0.95;
 }
 
 if(t < speedUntil) curSpeed *= 1.25;
