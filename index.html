@@ -1291,31 +1291,33 @@ function finish(cleared){
 
 
 /* 更新 */
-function update(){
+function update(delta){
   const t = performance.now();
   const nowMs = Date.now();
 
-  bgScrollX -= 2;
+  bgScrollX -= 2 * delta;
   if(bgScrollX <= -canvas.width){
     bgScrollX = 0;
   }
 
 // 物理
-player.vy += gravity;
+player.vy += gravity * delta;
 
 if(isMobile()){
 
   // ⭐ 上昇中だけほんの少し伸ばす（←ここが重要）
   if(player.vy < 0){
-    player.vy += gravity * -0.22;   
+    player.vy += gravity * -0.22 * delta;
+ 
   }
   // ⭐ 落下は今の速さを維持
   else{
-    player.vy += gravity * 0.75;
+    player.vy += gravity * 0.75 * delta;
   }
 }
 
-player.y += player.vy;
+player.y += player.vy * delta;
+
 
 
 
@@ -1348,18 +1350,18 @@ if(t < slowUntil)  curSpeed *= 0.72;
 
 
 // 移動（左へ流す）
-lightnings.forEach(l => { l.x -= curSpeed; });
+lightnings.forEach(l => { l.x -= curSpeed * delta; });
 
-items.forEach(it => { it.x -= curSpeed; });
+items.forEach(it => { it.x -= curSpeed * delta; });
 
 enemies.forEach(en => {
-  en.x -= curSpeed;
+  en.x -= curSpeed * delta;
 
-  // 工事中だけ回転（見た目用）
   if(en.kind === "construction"){
-    en.rot += 0.06;
+    en.rot += 0.06 * delta;
   }
 });
+
 
 
   // +1ポップ
@@ -2067,10 +2069,18 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.closePath();
 }
 
+
+let lastTime = 0;
+
 /* =========================================================
   10) 描画ループ（常時）
 ========================================================= */
-function drawFrame(){
+function drawFrame(time){
+  // ⭐ FPS差をなくす（超重要）
+if(!lastTime) lastTime = time;
+const delta = (time - lastTime) / 16.67;
+lastTime = time;
+
   if(state===STATE.SOUND || state===STATE.COURSE || state===STATE.START || state===STATE.END){
     drawUI();
     requestAnimationFrame(drawFrame);
@@ -2078,7 +2088,7 @@ function drawFrame(){
   }
 
   if(state===STATE.GAME){
-    if(running) update();
+    if(running) update(delta);
     drawGame();
     requestAnimationFrame(drawFrame);
     return;
