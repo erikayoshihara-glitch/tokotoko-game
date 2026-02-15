@@ -141,15 +141,6 @@ height:auto;
 <div class="flash" id="damageFlash"></div>
 <div class="fever" id="feverLayer"></div>
 
-<div class="hud" id="hud">
-  <div class="bigTime" id="bigTime">30</div>
-  <div class="pill">残り <span id="timeTxt">30.0</span>s</div>
-  <div class="pill">⚡ <span id="scoreTxt">0</span></div>
-  <div class="pill" id="hpPill">🔋 <span id="hpTxt">🔋🔋🔋</span></div>
-  <div class="pill tiny" id="statusTxt">状態：通常</div>
-  <div class="pill feverBadge" id="feverBadge">🌈 FEVER</div>
-</div>
-
 <div class="loading" id="loading">読み込み中…</div>
 
 <script>
@@ -183,8 +174,12 @@ sound_off_sp : { x1:0.15, x2:0.85, y1:0.74, y2:0.90 },
 
 
   // ⭐ 音選択（PC）
-  sound_on_pc  : { x1:140/960, x2:420/960, y1:260/540, y2:400/540 },
-  sound_off_pc : { x1:520/960, x2:800/960, y1:260/540, y2:400/540 }
+sound_on_pc  : { x1:140/960, x2:420/960, y1:260/540, y2:400/540 },
+sound_off_pc : { x1:520/960, x2:800/960, y1:260/540, y2:400/540 },
+
+// ⭐ シェアボタン（追加）
+shareX: { x:0, y:0, w:0, h:0 },
+shareLINE: { x:0, y:0, w:0, h:0 }
 
 };
 
@@ -251,8 +246,13 @@ const ASSET = {
   pitfall: "ch_enemy_pitfall.png",
   construction: "ch_enemy_construction.png",
   traffic: "ch_enemy_traffic.png",
-  trouble: "ch_enemy_trouble.png"
+  trouble: "ch_enemy_trouble.png",
+
+// ⭐ シェアボタン用（ここ追加）
+share_x: "x_icon.png",
+share_line: "line_icon.png"
 };
+
 
 const MODE = {
   ch: {
@@ -321,7 +321,6 @@ const SE_SRC = {
 ========================================================= */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-
 canvas.style.touchAction = "none"; // ←1回だけでOK
 
 
@@ -369,18 +368,6 @@ window.addEventListener("load", fitCanvas);
 fitCanvas();
 
 const loadingEl   = document.getElementById("loading");
-const hud         = document.getElementById("hud");
-const damageFlash = document.getElementById("damageFlash");
-const feverLayer  = document.getElementById("feverLayer");
-const feverBadge  = document.getElementById("feverBadge");
-
-const timeTxt   = document.getElementById("timeTxt");
-const scoreTxt  = document.getElementById("scoreTxt");
-const hpTxt     = document.getElementById("hpTxt");
-const hpPill    = document.getElementById("hpPill");
-const statusTxt = document.getElementById("statusTxt");
-const bigTimeEl = document.getElementById("bigTime");
-
 
 
 /* =========================================================
@@ -657,11 +644,14 @@ if(state===STATE.COURSE){
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
 
-  // ★中央ボタン押したらゲーム開始
-  startGame();
+  startBtnPressUntil = performance.now() + 120;
+
+  setTimeout(()=>{
+    startGame();
+  },120);
+
   return;
 }
-
 
 
   // ④ ゲーム中：ジャンプ
@@ -669,17 +659,18 @@ if(state===STATE.COURSE){
 
   // ⭐ JUMPボタン押したかチェック
   if(jumpBtnRect){
-    if(
-      x > jumpBtnRect.x &&
-      x < jumpBtnRect.x + jumpBtnRect.w &&
-      y > jumpBtnRect.y &&
-      y < jumpBtnRect.y + jumpBtnRect.h
-    ){
-      jumpBtnPressed = true;
-      jump();
-      return;
-    }
+  if(
+    x > jumpBtnRect.x &&
+    x < jumpBtnRect.x + jumpBtnRect.w &&
+    y > jumpBtnRect.y &&
+    y < jumpBtnRect.y + jumpBtnRect.h
+  ){
+    jumpBtnPressUntil = performance.now() + 120; // ←0.12秒へこむ
+    jump();
+    return;
   }
+}
+
 
   // PCは画面クリックでもジャンプ
   if(!isMobile()){
@@ -690,8 +681,43 @@ if(state===STATE.COURSE){
 }
 
 
+
   // ⑤ 終了画面：もう一度 / やめる
 if(state===STATE.END){
+
+// ⭐ シェアクリック
+if(hitBtn(BTN.shareX, x, y)){
+  shareToX();
+  return;
+}
+
+if(hitBtn(BTN.shareLINE, x, y)){
+  shareToLINE();
+  return;
+}
+
+
+  // ⭐ シェアクリック
+  if(
+  x > BTN.shareX.x &&
+  x < BTN.shareX.x + BTN.shareX.w &&
+  y > BTN.shareX.y &&
+  y < BTN.shareX.y + BTN.shareX.h
+){
+  shareToX();
+  return;
+}
+
+if(
+  x > BTN.shareLINE.x &&
+  x < BTN.shareLINE.x + BTN.shareLINE.w &&
+  y > BTN.shareLINE.y &&
+  y < BTN.shareLINE.y + BTN.shareLINE.h
+){
+  shareToLINE();
+  return;
+}
+
 
   if(isMobile()){
 
@@ -738,7 +764,7 @@ document.addEventListener("keydown",(e)=>{
 /* =========================================================
   8) ゲーム本体（あなたの既存仕様を維持）
 ========================================================= */
-const GAME_MS = 30_000;
+const GAME_MS = 60_000;
 
 
 const gravity = isMobile() ? 1.2 : 1.0;
@@ -762,6 +788,7 @@ let used = null;
 
 let player = {};
 let score = 0;
+let displayScore = 0; // 表示用スコア（アニメ用）
 let combo = 0;
 let comboText = "";
 let comboTextUntil = 0;
@@ -793,7 +820,9 @@ let starsAngle = 0;
 let popups = [];
 let comment = { text:"", until:0 };
 let jumpBtnRect = null; 
-let jumpBtnPressed = false; 
+let jumpBtnPressed = false;
+let jumpBtnPressUntil = 0;
+let startBtnPressUntil = 0;
 
 
 
@@ -813,40 +842,12 @@ function hit(a, b){
   );
 }
 
-/* HUD */
-function updateHUD(remainMs){
-
-  const sec = Math.max(0, remainMs/1000);
-
-  timeTxt.textContent = sec.toFixed(1);
-  bigTimeEl.textContent = Math.ceil(sec); // 大きいタイム
-
-  scoreTxt.textContent = score;
-  hpTxt.textContent = "🔋".repeat(hp) + "▫️".repeat(3-hp);
-}
+function updateHUD(remainMs){}
 
 
 function flashDamage(){
   damageFlash.classList.add("show");
   setTimeout(()=>damageFlash.classList.remove("show"), 120);
-}
-
-function popHP(){
-  hpPill.classList.add("hp-pop");
-  setTimeout(()=>hpPill.classList.remove("hp-pop"), 280);
-}
-
-function setStatus(){
-  const t = performance.now();
-  const parts = [];
-  if(t < feverUntil) parts.push("フィーバー");
-  if(t < mapRevealUntil) parts.push("先読み");
-  if(t < enemyRateDownUntil) parts.push("敵DOWN");
-  if(t < speedUntil) parts.push("SPEED+");
-  if(t < slowUntil)  parts.push("SPEED-");
-  if(mode==="mm" && shieldUntilHit) parts.push("🍘ガード");
-  statusTxt.textContent = "状態：" + (parts.length ? parts.join(" / ") : "通常");
-  feverBadge.classList.toggle("on", t < feverUntil);
 }
 
 /* ゲーム回数（モード別） */
@@ -1209,7 +1210,9 @@ player = {
 
 
   score = 0;
-  hp = 3;
+displayScore = 0; 
+hp = 3;
+
 
   lightnings = [];
   items = [];
@@ -1238,8 +1241,6 @@ player = {
 
   used = { fever:false, bigLightning:false, rare5:false };
   feverLayer.classList.remove("show");
-  feverBadge.classList.remove("on");
-  statusTxt.textContent = "状態：通常";
   updateHUD(GAME_MS);
 }
 
@@ -1250,7 +1251,7 @@ function startGame(){
 
 
   state = STATE.GAME;
-  hud.classList.add("show");
+
 
   playCount = loadPlayCount() + 1;
   savePlayCount(playCount);
@@ -1286,7 +1287,6 @@ function finish(cleared){
   lastCleared = !!cleared;
 
   stopBgm();
-  hud.classList.remove("show");
   state = STATE.END;
 
   if(soundOn){
@@ -1296,7 +1296,19 @@ function finish(cleared){
 
     playBgm(bgmSrc, false); // ⭐ここ重要
   }
+}  
+// ⭐ シェア処理
+
+function shareToX(){
+  const text = `⚡${score}GETした！`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
 }
+
+function shareToLINE(){
+  const text = `⚡${score}GETした！`;
+  window.open(`https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(text)}`);
+}
+
 
 
 
@@ -1590,9 +1602,6 @@ function say(text, duration=1200){
   // フィーバー終わり
   endFeverIfNeeded();
 
-  // 状態表示
-  setStatus();
-
 // ⭐ コンボリセット
 if(performance.now() > comboTimeout){
   combo = 0;
@@ -1605,13 +1614,11 @@ if(lightnings.length > 25) lightnings.splice(0,5);
 if(items.length > 20) items.splice(0,5);
 if(enemies.length > 20) enemies.splice(0,5);
 
-  // 終了判定（時間）
-  const remain = GAME_MS - (nowMs - startAt);
-  updateHUD(Math.max(0, remain));
+  const remain = GAME_MS - (Date.now() - startAt);
 
-  if(hp <= 0) finish(false);
-  else if(remain <= 0) finish(true);
+if(hp <= 0) finish(false);
 else if(remain <= 0) finish(true);
+
 }
 
 
@@ -1772,27 +1779,107 @@ function drawUI(){
 
   if(state===STATE.START){
 
-    const img = isMobile()?UI.start_sp:UI.start;
+  const img = isMobile()?UI.start_sp:UI.start;
 
-    if(img?.ok){
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-    }else{
-      drawFallbackText("ui_start.png が見つからない");
+  if(img?.ok){
+
+    // ⭐押した瞬間チェック
+    const pressed = performance.now() < startBtnPressUntil;
+
+    // ⭐押した時だけ少し縮む
+    if(pressed){
+      ctx.save();
+      ctx.translate(canvas.width/2, canvas.height/2);
+      ctx.scale(0.96, 0.96);
+      ctx.translate(-canvas.width/2, -canvas.height/2);
     }
-    return;
+
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+
+    if(pressed) ctx.restore();
+
+  }else{
+    drawFallbackText("ui_start.png が見つからない");
   }
 
-  if(state===STATE.END){
-    const img = lastCleared
-      ? (isMobile()?UI.clear_sp:UI.clear)
-      : (isMobile()?UI.over_sp:UI.over);
-
-    if(img?.ok){
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-    }
-    return;
-  }
+  return;
 }
+
+
+if(state===STATE.END){
+
+  // ⭐ スコアカウントアップ（ここに入れる）
+  if(displayScore < score){
+    displayScore += Math.ceil((score - displayScore) * 0.08);
+
+    if(score - displayScore < 1){
+      displayScore = score;
+    }
+  }
+
+  const img = lastCleared
+    ? (isMobile()?UI.clear_sp:UI.clear)
+    : (isMobile()?UI.over_sp:UI.over);
+
+  if(img?.ok){
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+  }
+
+  // ⭐ SCORE表示
+  ctx.save();
+  ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
+  ctx.textAlign = "center";
+
+  const text = "SCORE " + displayScore.toString().padStart(4,"0");
+
+  ctx.strokeText(text, canvas.width/2, canvas.height*0.42);
+  ctx.fillText(text, canvas.width/2, canvas.height*0.42);
+
+  ctx.restore();
+
+
+// =========================
+// ⭐ シェアボタン
+// =========================
+
+let shareY = canvas.height * 0.55;
+
+ctx.fillStyle = "rgba(0,0,0,0.4)";
+roundRect(ctx, canvas.width/2 - 220, shareY - 30, 440, 80, 20);
+ctx.fill();
+
+ctx.fillStyle = "#fff";
+ctx.font = "bold 20px sans-serif";
+ctx.textAlign = "center";
+
+const barWidth = 440;
+const barX = canvas.width/2 - barWidth/2;
+
+const btnSize = 60;
+const gap = 20;
+
+BTN.shareX = {
+  x: barX + barWidth/2 - btnSize - gap/2,
+  y: shareY - 20,
+  w: btnSize,
+  h: btnSize
+};
+
+BTN.shareLINE = {
+  x: barX + barWidth/2 + gap/2,
+  y: shareY - 20,
+  w: btnSize,
+  h: btnSize
+};
+
+
+drawShareBtn(BTN.shareX.x, BTN.shareX.y, "#333", "X");
+drawShareBtn(BTN.shareLINE.x, BTN.shareLINE.y, "#00c300", "LINE");
+
+
+return;
+}
+  }
 
 function drawGame(){
   // 背景
@@ -1815,7 +1902,6 @@ if(bg && bg.ok){
 
   const t = performance.now();
 
-  // 先読み（chのみ）
   // 先読み（chのみ）
 if(mode==="ch" && t < mapRevealUntil){
   ctx.save();
@@ -2025,11 +2111,48 @@ const offsetY = isMobile() ? 60 : 40;
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
 
 ctx.globalAlpha = 0.95;
-ctx.drawImage(I.ui_jump.img, btnX, btnY, btnW, btnH);
+const pressing = performance.now() < jumpBtnPressUntil;
+const scale = pressing ? 0.92 : 1; // ←押したら小さく
+
+ctx.save();
+
+ctx.translate(btnX + btnW/2, btnY + btnH/2);
+ctx.scale(scale, scale);
+ctx.translate(-btnW/2, -btnH/2);
+
+ctx.drawImage(I.ui_jump.img, 0, 0, btnW, btnH);
+
+ctx.restore();
+
 ctx.globalAlpha = 1;
 
 jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
 
+
+// =======================
+// ⭐ 右上UI（タイム＋スコア）
+// =======================
+ctx.save();
+
+ctx.textAlign = "right";
+ctx.textBaseline = "top";
+
+ctx.font = "bold 42px system-ui";
+ctx.fillStyle = "#fff";
+ctx.strokeStyle = "rgba(0,0,0,0.4)";
+ctx.lineWidth = 6;
+
+const remainMs = GAME_MS - (Date.now() - startAt);
+const sec = Math.max(0, remainMs / 1000).toFixed(1);
+
+ctx.strokeText(`TIME ${sec}`, canvas.width - 20, 20);
+ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
+
+ctx.font = "bold 28px system-ui";
+ctx.strokeText(`SCORE ${score}`, canvas.width - 20, 70);
+ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
+
+ctx.restore();
 
 
 }
@@ -2125,7 +2248,41 @@ async function boot(){
 requestAnimationFrame(drawFrame);
 }
 
+// =========================
+// ⭐ シェアボタン描画（ここ追加）
+// =========================
+function drawShareBtn(x,y,color,label){
+
+  const w = 64;
+  const h = 64;
+
+  // ボタン背景
+  ctx.fillStyle = color;
+  roundRect(ctx, x, y, w, h, 20);
+  ctx.fill();
+
+  // アイコン取得
+  const icon =
+    label === "X" ? I.share_x :
+    label === "LINE" ? I.share_line : null;
+
+  // 中央配置
+if(icon && icon.ok){
+
+  const iconSize = label === "LINE" ? 50 : 36;
+
+  const ix = x + (w - iconSize) / 2;
+  const iy = y + (h - iconSize) / 2;
+
+  ctx.drawImage(icon.img, ix, iy, iconSize, iconSize);
+}
+
+}
+
 boot();
+
+
+function popHP(){} 
 
 </script>
 </body>
