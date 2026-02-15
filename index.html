@@ -931,12 +931,15 @@ if(bgm){
 /* スポーン */
 function makeLightning(){
 
+  // ⭐ PCだけ最高高さを制限
+  const maxHeight = isMobile() ? 120 : 80;
+
   // ⭐ 30%で地面
   if(Math.random() < 0.3){
     return {
       kind:"lightning",
       x: canvas.width,
-      y: groundY + 20, // 地面
+      y: groundY + 20,
       w:50,
       h:50
     };
@@ -946,17 +949,20 @@ function makeLightning(){
   return {
     kind:"lightning",
     x: canvas.width,
-    y: groundY - 60 - Math.random()*120,
+    y: groundY - 60 - Math.random()*maxHeight,
     w:50,
     h:50
   };
 }
 
+
 function makeItem(key){
 
   // ⭐ PC/SPで位置パラメータを分離
 let Y_BASE = isMobile() ? 120 : 60;
-let Y_RAND = isMobile() ? 180 : 120;
+
+// PCだけ最高位置を下げる（ここが重要）
+let Y_RAND = isMobile() ? 180 : 60;
 
 
   let y = groundY - Y_BASE - Math.random()*Y_RAND;
@@ -1086,13 +1092,15 @@ function spawnLightningPattern(){
   // ===== 縦ライン（ジャンプ用）
   if(r < 0.65){
 
-    const y = groundY - 60 - Math.random()*120;
+    const maxHeight = isMobile() ? 120 : 80;
+const y = groundY - 60 - Math.random()*maxHeight;
+
 
     for(let i=0;i<2;i++){
       lightnings.push({
         kind:"lightning",
         x: baseX,
-        y: y - i*80,
+        y: y - i * (isMobile() ? 80 : 40),
         w:50,h:50
       });
     }
@@ -1102,7 +1110,9 @@ function spawnLightningPattern(){
   // ===== ななめライン（気持ちいい）
   if(r < 0.9){
 
-    const startY = groundY - 60 - Math.random()*120;
+    const maxHeight = isMobile() ? 120 : 80;
+const startY = groundY - 60 - Math.random()*maxHeight;
+
 
     for(let i=0;i<3;i++){
       lightnings.push({
