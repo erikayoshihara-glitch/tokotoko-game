@@ -924,12 +924,31 @@ if(bgm){
 
 /* スポーン */
 function makeLightning(){
-  return { kind:"lightning", x: canvas.width, y: groundY - 60 - Math.random()*120, w:50, h:50 };
+
+  // ⭐ 30%で地面
+  if(Math.random() < 0.3){
+    return {
+      kind:"lightning",
+      x: canvas.width,
+      y: groundY + 20, // 地面
+      w:50,
+      h:50
+    };
+  }
+
+  // ⭐ それ以外は空中
+  return {
+    kind:"lightning",
+    x: canvas.width,
+    y: groundY - 60 - Math.random()*120,
+    w:50,
+    h:50
+  };
 }
+
 function makeItem(key){
 
   // ⭐ PC/SPで位置パラメータを分離
-  // ⭐チャーすけだけアイテム少し低めに
 let Y_BASE = isMobile() ? 120 : 60;
 let Y_RAND = isMobile() ? 180 : 120;
 
