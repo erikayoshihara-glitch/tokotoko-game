@@ -138,7 +138,6 @@ height:auto;
 <body>
 <canvas id="game" width="960" height="540"></canvas>
 
-
 <div class="flash" id="damageFlash"></div>
 <div class="fever" id="feverLayer"></div>
 
@@ -236,8 +235,6 @@ const ASSET = {
   ch_compass: "ch_item_compass.png",
   ch_station: "ch_item_station.png",
   ch_curry: "ch_item_curry.png",
-  ch_item_battery: "ch_item_battery.png",
-
 
   // mm アイテム
   mm_onigiri: "mm_item_onigiri.png",
@@ -845,7 +842,8 @@ function hit(a, b){
   );
 }
 
-function updateHUD(remainMs){}  
+function updateHUD(remainMs){}
+
 
 function flashDamage(){
   damageFlash.classList.add("show");
@@ -1300,20 +1298,29 @@ function finish(cleared){
   }
 }  
 // ⭐ シェア処理
-
 function shareToX(){
-  const text = `⚡${score}GETした！`;
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
+
+  const text = `⚡${score}GETした！
+ミラまる＆チャーすけのEVエナジーラン⚡
+▶ https://ev-plus.jp/lp/energy-run/
+#ミラまる #チャーすけ #EVエナジーラン`;
+
+  window.open(
+    "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text)
+  );
 }
 
 function shareToLINE(){
-  const text = `⚡${score}GETした！`;
-  window.open(`https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(text)}`);
+
+  const text = `⚡${score}GETした！
+ミラまる＆チャーすけのEVエナジーラン⚡
+▶ https://ev-plus.jp/lp/energy-run/
+#ミラまる #チャーすけ #EVエナジーラン`;
+
+  window.open(
+    "https://social-plugins.line.me/lineit/share?text=" + encodeURIComponent(text)
+  );
 }
-
-
-
-
 
 
 /* 更新 */
@@ -2156,36 +2163,11 @@ ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
 
 ctx.restore();
 
-// =======================
-// ⭐ HP（電池）左上表示
-// =======================
-ctx.save();
 
-const batterySize = 32;
-const gap = 6;
-const startX = 20;
-const startY = 20;
-
-for(let i=0; i<3; i++){
-
-  if(I.ch_item_battery?.ok){
-
-    ctx.globalAlpha = (i < hp) ? 1 : 0.25;
-
-    ctx.drawImage(
-      I.ch_item_battery.img,
-      startX + i * (batterySize + gap),
-      startY,
-      batterySize,
-      batterySize
-    );
-  }
-}
-
-ctx.globalAlpha = 1;
-ctx.restore();
 }
 }
+
+
 function drawFallbackText(msg){
   ctx.save();
   ctx.fillStyle="#111";
