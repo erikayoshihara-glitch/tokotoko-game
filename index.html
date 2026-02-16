@@ -14,7 +14,7 @@ background:#fff;
 overflow:hidden;
 height:100dvh;
 
-/* ⭐中央固定（ここに入れる） */
+/* ⭐中央固定 */
 display:flex;
 align-items:center;
 justify-content:center;
@@ -32,8 +32,6 @@ touch-action:manipulation;
 width:min(100vw, calc(100dvh * (960/540)));
 height:auto;
 }
-
-
 
   /* ===== 演出 ===== */
   .flash{
@@ -144,6 +142,7 @@ height:auto;
 <div class="loading" id="loading">読み込み中…</div>
 
 <script>
+
 /* =========================================================
   0) 状態（画面遷移）
   音あり/なし → コース選択 → スタート → ゲーム → 結果
@@ -156,7 +155,6 @@ const STATE = {
   END: "end"
 };
 
-// ⭐↓↓↓↓ ここに追加 ↓↓↓↓
 const BTN = {
 
   // スマホ縦 END画面
@@ -254,7 +252,6 @@ share_x: "x_icon.png",
 share_line: "line_icon.png"
 };
 
-
 const MODE = {
   ch: {
     name: "🐶 チャーすけコース",
@@ -292,7 +289,6 @@ const ENEMY_Y_OFFSET = {
   trouble:{ pc:100, sp:130 }
 };
 
-
 /* =========================================================
   3) 音源（SE）
   ※あなたの指定をそのまま反映
@@ -329,7 +325,6 @@ canvas.style.touchAction = "none"; // ←1回だけでOK
 function isMobile(){
   return /iPhone|Android.+Mobile|iPad|iPod/i.test(navigator.userAgent);
 }
-
 
 function fitCanvas(){
 
@@ -424,10 +419,6 @@ function stopBgm(){
   normalBgmSrc = null;
 }
 
-
-
-
-
 function playBgm(src, loop=true){
 
   if(!soundOn) return;
@@ -486,12 +477,6 @@ function unlockAudioOnce(){
   }catch(e){}
 }
 
-
-
-
-
-
-
 // SEは多重再生できるようにcloneして鳴らす
 function inFeverNow(){
   return performance.now() < feverUntil;
@@ -526,7 +511,6 @@ a.volume = 0.85;
   if(p && p.catch) p.catch(()=>{});
 }
 
-
 /* =========================================================
   7) 入力（UIクリック座標 / ゲーム操作）
 ========================================================= */
@@ -548,8 +532,6 @@ function getPointerXY(e){
   return {x,y};
 }
 
-
-
 function hitBtn(btn, x, y){
   const nx = x / canvas.width;
   const ny = y / canvas.height;
@@ -562,13 +544,9 @@ function hitBtn(btn, x, y){
   );
 }
 
-
 canvas.addEventListener("pointerdown",(e)=>{
-
   unlockAudioOnce();
-
-  const { x, y } = getPointerXY(e); // ← 必ず必要
-
+  const { x, y } = getPointerXY(e); 
 
   // ==========================
 // 🔊 音あり / 音なし選択
@@ -606,13 +584,9 @@ if (state === STATE.SOUND) {
       state = STATE.COURSE;
       return;
     }
-
   }
-
   return;
 }
-
-
 
   // ② コース選択（左=ミラまる、右=チャーすけ）
 if(state===STATE.COURSE){
@@ -641,7 +615,6 @@ if(state===STATE.COURSE){
   return;
 }
 
-
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
 
@@ -653,7 +626,6 @@ if(state===STATE.COURSE){
 
   return;
 }
-
 
   // ④ ゲーム中：ジャンプ
   if(state===STATE.GAME){
@@ -671,8 +643,6 @@ if(state===STATE.COURSE){
     return;
   }
 }
-
-
   // PCは画面クリックでもジャンプ
   if(!isMobile()){
     jump();
@@ -680,8 +650,6 @@ if(state===STATE.COURSE){
 
   return;
 }
-
-
 
   // ⑤ 終了画面：もう一度 / やめる
 if(state===STATE.END){
@@ -696,8 +664,6 @@ if(hitBtn(BTN.shareLINE, x, y)){
   shareToLINE();
   return;
 }
-
-
   // ⭐ シェアクリック
   if(
   x > BTN.shareX.x &&
@@ -718,7 +684,6 @@ if(
   shareToLINE();
   return;
 }
-
 
   if(isMobile()){
 
@@ -745,10 +710,8 @@ if(
       stopBgm();
       return;
     }
-
   }
 }
-
 
 });
 
@@ -766,15 +729,11 @@ document.addEventListener("keydown",(e)=>{
   8) ゲーム本体（あなたの既存仕様を維持）
 ========================================================= */
 const GAME_MS = 60_000;
-
-
 const gravity = isMobile() ? 1.2 : 1.0;
 
 function getJumpPower(){
   return isMobile() ? -24 : -21;
 }
-
-
 
 const BASE_SPEED = 4.5;
 const PLAYER_GROUND_OFFSET = isMobile() ? 30 : 20;
@@ -824,9 +783,6 @@ let jumpBtnRect = null;
 let jumpBtnPressed = false;
 let jumpBtnPressUntil = 0;
 let startBtnPressUntil = 0;
-
-
-
 let shieldUntilHit = false; // mm専用🍘
 
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
@@ -844,7 +800,6 @@ function hit(a, b){
 }
 
 function updateHUD(remainMs){}
-
 
 function flashDamage(){
   damageFlash.classList.add("show");
@@ -902,9 +857,6 @@ function startFever(){
   say("🌈 フィーバー突入！",1100);
 }
 
-
-
-
 function endFeverIfNeeded(){
 
   if(!feverBgm) return;
@@ -927,8 +879,6 @@ if(bgm){
 }
   }
 }
-
-
 
 /* スポーン */
 function makeLightning(){
@@ -956,7 +906,6 @@ function makeLightning(){
     h:50
   };
 }
-
 
 function makeItem(key){
 
@@ -986,9 +935,7 @@ return {
   w:(key==="lightningBig") ? bigSize : itemSize,
   h:(key==="lightningBig") ? bigSize : itemSize
 };
-
 }
-
 
 function makeEnemyByRule(){
 
@@ -1012,10 +959,6 @@ function makeEnemyByRule(){
     rot: 0
   };
 }
-
-
-
-
 
 /* このゲームのレア枠を「1回ずつ」消化 */
 function trySpawnPlannedEvent(){
@@ -1066,7 +1009,6 @@ function trySpawnPlannedEvent(){
     }
     return true;
   }
-
   return false;
 }
 
@@ -1074,7 +1016,6 @@ function trySpawnPlannedEvent(){
 function spawnLightningPattern(){
 
   const baseX = canvas.width;
-
   const r = Math.random();
 
   // ===== 地面ライン（初心者向け）
@@ -1130,7 +1071,6 @@ const startY = groundY - 60 - Math.random()*maxHeight;
   // ===== 単発（普通）
   lightnings.push(makeLightning());
 }
-
 
 function spawn(){
   const now = Date.now();
@@ -1193,27 +1133,24 @@ function jump(){
   }
 }
 
-
 /* 初期化 */
 function resetGameCore(){
   running = false;
   startAt = 0;
 
-  const size = isMobile() ? 100 : 90; // ⭐スマホだけ大きく
+  const size = isMobile() ? 100 : 90; 
 
 player = {
-  x: isMobile() ? 20 : 100, // ⭐ここ変更
+  x: isMobile() ? 20 : 100, 
   y: groundY + PLAYER_GROUND_OFFSET,
   w: size,
   h: size,
   vy: 0
 };
 
-
   score = 0;
 displayScore = 0; 
 hp = 3;
-
 
   lightnings = [];
   items = [];
@@ -1249,10 +1186,7 @@ hp = 3;
 function startGame(){
   if(!mode) mode = "ch";
 
-
-
   state = STATE.GAME;
-
 
   playCount = loadPlayCount() + 1;
   savePlayCount(playCount);
@@ -1271,7 +1205,6 @@ function startGame(){
   }else{
     say("いくよー！", 900);
   }
-
   running = true;
   startAt = Date.now();
 }
@@ -1280,11 +1213,8 @@ function startGame(){
 function finish(cleared){
 
   if(!running) return;
-
   running = false;
-
   normalBgmSrc = null;
-
   lastCleared = !!cleared;
 
   stopBgm();
@@ -1295,7 +1225,7 @@ function finish(cleared){
       ? RESULT_BGM[mode].clear
       : RESULT_BGM[mode].over;
 
-    playBgm(bgmSrc, false); // ⭐ここ重要
+    playBgm(bgmSrc, false); 
   }
 }  
 // ⭐ シェア処理
@@ -1312,7 +1242,6 @@ function shareToX(){
 }
 
 function shareToLINE(){
-
   const text = `⚡${score}GETした！
 ミラまる＆チャーすけのEVエナジーラン⚡
 ▶ https://ev-plus.jp/lp/energy-run/
@@ -1322,7 +1251,6 @@ function shareToLINE(){
     "https://social-plugins.line.me/lineit/share?text=" + encodeURIComponent(text)
   );
 }
-
 
 /* 更新 */
 function update(delta){
@@ -1339,7 +1267,7 @@ player.vy += gravity * delta;
 
 if(isMobile()){
 
-  // ⭐ 上昇中だけほんの少し伸ばす（←ここが重要）
+  // ⭐ 上昇中だけほんの少し伸ばす
   if(player.vy < 0){
     player.vy += gravity * -0.22 * delta;
  
@@ -1352,13 +1280,6 @@ if(isMobile()){
 
 player.y += player.vy * delta;
 
-
-
-
-
-
-
-
   // 地面に吸着
   const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
 
@@ -1366,7 +1287,6 @@ if(player.y > playerGroundY){
   player.y = playerGroundY;
   player.vy = 0;
 }
-
 
   // スポーン
   spawn();
@@ -1382,12 +1302,9 @@ if(isMobile()){
 if(t < speedUntil) curSpeed *= 1.25;
 if(t < slowUntil)  curSpeed *= 0.72;
 
-
 // 移動（左へ流す）
 lightnings.forEach(l => { l.x -= curSpeed * delta; });
-
 items.forEach(it => { it.x -= curSpeed * delta; });
-
 enemies.forEach(en => {
   en.x -= curSpeed * delta;
 
@@ -1395,8 +1312,6 @@ enemies.forEach(en => {
     en.rot += 0.06 * delta;
   }
 });
-
-
 
   // +1ポップ
   popups.forEach(p => { p.y -= 0.6; p.life--; });
@@ -1416,7 +1331,6 @@ if(combo >= 3){
   comboTextUntil = performance.now() + 800;
 }
 
-
     const addScore = 10 * combo;
     score += addScore;
 
@@ -1431,15 +1345,11 @@ if(combo >= 3){
     });
 
     if(Math.random() < 0.10) talk("lightning");
-
     return false;
   }
 
   return l.x > -60;
 });
-
-
-
 
 function say(text, duration=1200){
   comment.text = text;
@@ -1482,7 +1392,6 @@ function say(text, duration=1200){
             life: 40
           });
         }
-
         talk("heal");
         return false;
       }
@@ -1553,13 +1462,11 @@ function say(text, duration=1200){
         return false;
       }
     }
-
     return false;
   }
 
   return it.x > -90;
 });
-
 
   // 敵衝突
   enemies = enemies.filter(en=>{
@@ -1618,8 +1525,6 @@ if(performance.now() > comboTimeout){
   comboText = "";
 }
 
-
-
 if(lightnings.length > 25) lightnings.splice(0,5);
 if(items.length > 20) items.splice(0,5);
 if(enemies.length > 20) enemies.splice(0,5);
@@ -1628,9 +1533,7 @@ if(enemies.length > 20) enemies.splice(0,5);
 
 if(hp <= 0) finish(false);
 else if(remain <= 0) finish(true);
-
 }
-
 
 // ================================
 // ⭐ 上部テロップ表示
@@ -1639,7 +1542,6 @@ function say(text, duration=1200){
   comment.text = text;
   comment.until = performance.now() + duration;
 }
-
 
 // ================================
 // ⭐ キャラ口調トーク（配列対応版）
@@ -1751,7 +1653,6 @@ function talk(type){
   }
 }
 
-
 /* =========================================================
   9) 描画（状態別）
 ========================================================= */
@@ -1770,8 +1671,6 @@ function drawUI(){
 }else{
   drawFallbackText("ui_sound_select.png が見つからない");
 }
-
-
     return;
   }
 
@@ -1811,10 +1710,8 @@ function drawUI(){
   }else{
     drawFallbackText("ui_start.png が見つからない");
   }
-
   return;
 }
-
 
 if(state===STATE.END){
 
@@ -1846,7 +1743,6 @@ if(state===STATE.END){
   ctx.fillText(text, canvas.width/2, canvas.height*0.42);
 
   ctx.restore();
-
 
 // =========================
 // ⭐ シェアボタン
@@ -1882,10 +1778,8 @@ BTN.shareLINE = {
   h: btnSize
 };
 
-
 drawShareBtn(BTN.shareX.x, BTN.shareX.y, "#333", "X");
 drawShareBtn(BTN.shareLINE.x, BTN.shareLINE.y, "#00c300", "LINE");
-
 
 return;
 }
@@ -1894,8 +1788,6 @@ return;
 function drawGame(){
   // 背景
 const bg = (isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg;
-
-
 
 if(bg && bg.ok){
 
@@ -1906,9 +1798,7 @@ if(bg && bg.ok){
 
   ctx.fillStyle = "#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
-
 }
-
 
   const t = performance.now();
 
@@ -1936,7 +1826,6 @@ if(mode==="ch" && t < mapRevealUntil){
 
   ctx.restore();
 }
-
 
   // ⚡
   lightnings.forEach(l=>{
@@ -1998,10 +1887,6 @@ items.forEach(it=>{
 }
 
 　　ctx.restore();
-
-
-
-
 
   // 🍘ガードリング
   if(mode==="mm" && shieldUntilHit){
@@ -2213,7 +2098,6 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.closePath();
 }
 
-
 let lastTime = 0;
 
 /* =========================================================
@@ -2324,7 +2208,6 @@ function drawBattery(x,y,hp){
 
 
 boot();
-
 
 function popHP(){} 
 
