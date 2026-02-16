@@ -235,6 +235,7 @@ const ASSET = {
   ch_compass: "ch_item_compass.png",
   ch_station: "ch_item_station.png",
   ch_curry: "ch_item_curry.png",
+  ch_item_battery: "ch_item_battery.png",
 
   // mm アイテム
   mm_onigiri: "mm_item_onigiri.png",
@@ -1265,8 +1266,8 @@ function startGame(){
   if(gameEvent.fever) say("今日は…特別な予感！", 1000);
   else if(gameEvent.bigLightning) say("たまに大⚡くるかも！", 1000);
   else if(gameEvent.rare5){
-    if(mode==="ch") say("次は⛽か🍛かも？", 1000);
-    else say("次は🍘か🍵かも？", 1000);
+    if(mode==="ch") say("次はレアアイテムかも？", 1000);
+    else say("次はレアアイテムかも？", 1000);
   }else{
     say("いくよー！", 900);
   }
@@ -1669,7 +1670,7 @@ function talk(type){
 
     map: [
       "なんとなく分かるかも…",
-      "敵が見やすくなったみたい"
+      "トラブルが見やすくなったみたい"
     ],
 
     enemyDown: [
@@ -1713,12 +1714,12 @@ function talk(type){
     ],
 
     map: [
-      "敵が見やすくなったよ！",
-      "敵に気をつけて！"
+      "トラブルが見やすくなったよ！",
+      "トラブルに気をつけて！"
     ],
 
     enemyDown: [
-      "敵が減った！",
+      "トラブルが減った！",
       "今がチャンス！"
     ],
 
@@ -2160,13 +2161,11 @@ ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
 ctx.font = "bold 28px system-ui";
 ctx.strokeText(`SCORE ${score}`, canvas.width - 20, 70);
 ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
-
 ctx.restore();
-
+drawBattery(20, 20, hp);
 
 }
 }
-
 
 function drawFallbackText(msg){
   ctx.save();
@@ -2198,6 +2197,7 @@ function drawStar(ctx, x, y, spikes, outerRadius, innerRadius){
 }
 
 function roundRect(ctx, x, y, w, h, r){
+
   r = Math.min(r, w/2, h/2);
   if(ctx.roundRect){
     ctx.beginPath();
@@ -2287,6 +2287,41 @@ if(icon && icon.ok){
 }
 
 }
+// =======================
+// ⭐ バッテリー表示（3個並び）
+// =======================
+function drawBattery(x,y,hp){
+
+  const size = 48;   // 電池サイズ
+  const gap = 8;     // 間隔
+  const maxHp = 3;
+
+  ctx.save();
+
+  for(let i=0; i<maxHp; i++){
+
+    const bx = x + i * (size + gap);
+
+    // HPある分だけ表示
+    if(i < hp){
+
+      if(I.ch_item_battery?.ok){
+        ctx.drawImage(I.ch_item_battery.img, bx, y, size, size);
+      }
+
+    }else{
+      // HPない部分は半透明（空電池っぽく）
+      if(I.ch_item_battery?.ok){
+        ctx.globalAlpha = 0.25;
+        ctx.drawImage(I.ch_item_battery.img, bx, y, size, size);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
 
 boot();
 
