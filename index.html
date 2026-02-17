@@ -163,7 +163,6 @@ height:auto;
   display:block;
 }
 
-
 </style>
 </head>
 
@@ -700,7 +699,6 @@ if(state===STATE.COURSE){
   if(!isMobile()){
     jump();
   }
-
   return;
 }
 
@@ -772,9 +770,20 @@ document.addEventListener("keydown",(e)=>{
   if(e.code==="Space"){
     e.preventDefault();
     unlockAudioOnce();
-    if(state===STATE.GAME) jump();
-    if(state===STATE.START) startGame();
-    if(state===STATE.END) startGame();
+
+    // ⭐ ゲーム中だけジャンプ
+    if(state===STATE.GAME){
+      jump();
+      return;
+    }
+
+    // ⭐ スタート画面だけ開始
+    if(state===STATE.START){
+      startGame();
+      return;
+    }
+
+    // ⭐ ENDでは何もしない（←ここが追加ポイント）
   }
 });
 
@@ -906,18 +915,15 @@ function startFever(){
 
   feverBgm.play().catch(()=>{});
 }
-
   say("🌈 フィーバー突入！",1100);
 }
 
 function endFeverIfNeeded(){
 
   if(!feverBgm) return;
-
   const t = performance.now();
 
   if(t >= feverUntil){
-
     feverLayer.classList.remove("show");
 
     if(feverBgm){
@@ -967,8 +973,6 @@ let Y_BASE = isMobile() ? 120 : 60;
 
 // PCだけ最高位置を下げる（ここが重要）
 let Y_RAND = isMobile() ? 180 : 60;
-
-
   let y = groundY - Y_BASE - Math.random()*Y_RAND;
 
   // ===== 個別調整 =====
@@ -991,14 +995,12 @@ return {
 }
 
 function makeEnemyByRule(){
-
   let kind;
   if(spawnCount % 5 === 0) kind = "trouble";
   else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
   else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
 
   const h = 70;
-
   const device = isMobile() ? "sp" : "pc";
   const yOffset = ENEMY_Y_OFFSET[kind]?.[device] ?? 50;
 
@@ -1131,7 +1133,6 @@ function spawn(){
   const inFever = (t < feverUntil);
 
   let interval = inFever ? 350 : 800;
-
 
   if(now - lastSpawn < interval) return;
   lastSpawn = now;
@@ -1779,7 +1780,7 @@ function drawUI(){
 
 if(state===STATE.END){
 
-  // ⭐ スコアカウントアップ（ここに入れる）
+  // ⭐ スコアカウントアップ
   if(displayScore < score){
     displayScore += Math.ceil((score - displayScore) * 0.08);
 
@@ -1801,8 +1802,8 @@ if(state===STATE.END){
 ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
 ctx.textAlign = "center";
 
-ctx.fillStyle = "#000";     // ← これ追加（文字色）
-ctx.strokeStyle = "#fff";   // ← 任意（白フチにすると見やすい）
+ctx.fillStyle = "#000";    
+ctx.strokeStyle = "#fff";   
 
 const text = "SCORE " + displayScore.toString().padStart(4,"0");
 
@@ -1827,7 +1828,7 @@ const barX = canvas.width/2 - barWidth/2;
 
 const btnSize = 60;
 
-// ⭐ 左右の中央に配置（バランス良い）
+// ⭐ 左右の中央に配置
 BTN.shareX = {
   x: canvas.width * 0.41 - btnSize/2,
   y: shareY - 20,
@@ -1854,7 +1855,6 @@ function drawGame(){
 const bg = (isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg;
 
 if(bg && bg.ok){
-
   ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
   ctx.drawImage(bg.img, bgScrollX + canvas.width, 0, canvas.width, canvas.height);
 
@@ -1885,9 +1885,7 @@ if(mode==="ch" && t < mapRevealUntil){
       0, 0, Math.PI*2
     );
     ctx.fill();
-
   });
-
   ctx.restore();
 }
 
@@ -1904,7 +1902,6 @@ items.forEach(it=>{
     ctx.drawImage(imgObj.img, it.x, it.y, it.w, it.h);
   }
 });
-
 
   // 敵
   enemies.forEach(en=>{
@@ -2050,7 +2047,6 @@ if(t < comment.until && comment.text){
   ctx.restore();
 }
 
-
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
 if(I.ui_jump && I.ui_jump.ok){
 
@@ -2089,7 +2085,6 @@ ctx.restore();
 ctx.globalAlpha = 1;
 
 jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
-
 
 // =======================
 // ⭐ 右上UI（タイム＋スコア）
@@ -2246,8 +2241,6 @@ function drawShareBtn(x,y,label){
   ctx.drawImage(icon.img, ix, iy, w, h);
 }
 
-
-
 // =======================
 // ⭐ バッテリー表示（3個並び）
 // =======================
@@ -2279,13 +2272,9 @@ function drawBattery(x,y,hp){
       }
     }
   }
-
   ctx.restore();
 }
-
-
 boot();
-
 function popHP(){} 
 
 </script>
