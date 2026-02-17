@@ -8,6 +8,12 @@
 
 <title>ミラまる＆チャーすけのEVエナジーラン</title>
 <style>
+  *{
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
 html,body{
 margin:0;
 background:#fff;
@@ -1138,13 +1144,24 @@ function resetGameCore(){
   running = false;
   startAt = 0;
 
-  const size = isMobile() ? 100 : 90; 
+  const baseW = isMobile() ? 100 : 90;
+
+// ⭐ 元画像の比率取得
+const img = I[MODE[mode].playerKey]?.img;
+
+let w = baseW;
+let h = baseW;
+
+if(img){
+  const ratio = img.naturalHeight / img.naturalWidth;
+  h = w * ratio;
+}
 
 player = {
-  x: isMobile() ? 20 : 100, 
+  x: isMobile() ? 20 : 100,
   y: groundY + PLAYER_GROUND_OFFSET,
-  w: size,
-  h: size,
+  w: w,
+  h: h,
   vy: 0
 };
 
@@ -1734,25 +1751,25 @@ if(state===STATE.END){
 
   // ⭐ SCORE表示
   ctx.save();
-  ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
-  ctx.textAlign = "center";
+ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
+ctx.textAlign = "center";
 
-  const text = "SCORE " + displayScore.toString().padStart(4,"0");
+ctx.fillStyle = "#000";     // ← これ追加（文字色）
+ctx.strokeStyle = "#fff";   // ← 任意（白フチにすると見やすい）
 
-  ctx.strokeText(text, canvas.width/2, canvas.height*0.42);
-  ctx.fillText(text, canvas.width/2, canvas.height*0.42);
+const text = "SCORE " + displayScore.toString().padStart(4,"0");
 
-  ctx.restore();
+ctx.strokeText(text, canvas.width/2, canvas.height*0.52);
+ctx.fillText(text, canvas.width/2, canvas.height*0.52);
+
+ctx.restore();
+
 
 // =========================
 // ⭐ シェアボタン
 // =========================
 
 let shareY = canvas.height * 0.55;
-
-ctx.fillStyle = "rgba(0,0,0,0.4)";
-roundRect(ctx, canvas.width/2 - 220, shareY - 30, 440, 80, 20);
-ctx.fill();
 
 ctx.fillStyle = "#fff";
 ctx.font = "bold 20px sans-serif";
@@ -1762,24 +1779,24 @@ const barWidth = 440;
 const barX = canvas.width/2 - barWidth/2;
 
 const btnSize = 60;
-const gap = 20;
 
+// ⭐ 左右の中央に配置（バランス良い）
 BTN.shareX = {
-  x: barX + barWidth/2 - btnSize - gap/2,
+  x: canvas.width * 0.41 - btnSize/2,
   y: shareY - 20,
   w: btnSize,
   h: btnSize
 };
 
 BTN.shareLINE = {
-  x: barX + barWidth/2 + gap/2,
+  x: canvas.width * 0.55 - btnSize/2,
   y: shareY - 20,
   w: btnSize,
   h: btnSize
 };
 
-drawShareBtn(BTN.shareX.x, BTN.shareX.y, "#333", "X");
-drawShareBtn(BTN.shareLINE.x, BTN.shareLINE.y, "#00c300", "LINE");
+drawShareBtn(BTN.shareX.x, BTN.shareX.y, "X");
+drawShareBtn(BTN.shareLINE.x, BTN.shareLINE.y, "LINE");
 
 return;
 }
@@ -1870,23 +1887,26 @@ items.forEach(it=>{
   　py += p * 220;
 }
 
-　　const playerKey = MODE[mode].playerKey;
+// キャラ（ぷにっと膨らむアニメ）
+const playerKey = MODE[mode].playerKey;
 
-// 脈動（※やるならこの1回だけ）
-　　const scale = 1 + Math.sin(t * 0.015) * 0.05;
-　　const cx = px + player.w/2;
-　　const cy = py + player.h/2;
+// ⭐ 膨らみ強さ
+const scale = 1 + Math.sin(t * 0.015) * 0.04;
 
-　　ctx.save();
-　　ctx.translate(cx, cy);
-　　ctx.scale(scale, scale);
-　　ctx.translate(-cx, -cy);
+const cx = px + player.w/2;
+const cy = py + player.h/2;
 
-　if(I[playerKey]?.ok){
-  　ctx.drawImage(I[playerKey].img, px, py, player.w, player.h);
+ctx.save();
+ctx.translate(cx, cy);
+ctx.scale(scale, scale);
+ctx.translate(-cx, -cy);
+
+if(I[playerKey]?.ok){
+  ctx.drawImage(I[playerKey].img, px, py, player.w, player.h);
 }
 
-　　ctx.restore();
+ctx.restore();
+
 
   // 🍘ガードリング
   if(mode==="mm" && shieldUntilHit){
@@ -1925,7 +1945,7 @@ popups.forEach(p=>{
   ctx.save();
 
   const alpha = p.life / 40;
-  const scale = 1 + (1 - alpha) * 0.4; // 少し大きくなる演出
+  const scale = 1;
 
   ctx.globalAlpha = alpha;
 
@@ -2142,35 +2162,36 @@ requestAnimationFrame(drawFrame);
 }
 
 // =========================
-// ⭐ シェアボタン描画（ここ追加）
+// ⭐ シェアボタン描画（枠なし版）
 // =========================
-function drawShareBtn(x,y,color,label){
+function drawShareBtn(x,y,label){
 
-  const w = 64;
-  const h = 64;
-
-  // ボタン背景
-  ctx.fillStyle = color;
-  roundRect(ctx, x, y, w, h, 20);
-  ctx.fill();
-
-  // アイコン取得
   const icon =
     label === "X" ? I.share_x :
     label === "LINE" ? I.share_line : null;
 
-  // 中央配置
-if(icon && icon.ok){
+  if(!icon || !icon.ok) return;
 
-  const iconSize = label === "LINE" ? 50 : 36;
+  // ⭐ LINEガイドライン対応
+  const ICON_SIZE = 40;   // ロゴサイズ
+  const SAFE_AREA = 100;   // 余白込みエリア
 
-  const ix = x + (w - iconSize) / 2;
-  const iy = y + (h - iconSize) / 2;
+  const iw = icon.img.naturalWidth;
+  const ih = icon.img.naturalHeight;
+  const scale = Math.min(ICON_SIZE / iw, ICON_SIZE / ih);
 
-  ctx.drawImage(icon.img, ix, iy, iconSize, iconSize);
+  const w = iw * scale;
+  const h = ih * scale;
+
+  // ⭐ 中央配置（余白確保）
+  const ix = x + (SAFE_AREA - w)/2;
+  const iy = y + (SAFE_AREA - h)/2;
+
+  ctx.drawImage(icon.img, ix, iy, w, h);
 }
 
-}
+
+
 // =======================
 // ⭐ バッテリー表示（3個並び）
 // =======================
