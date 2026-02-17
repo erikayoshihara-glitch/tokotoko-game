@@ -136,12 +136,41 @@ height:auto;
   display:block;
 }
 
+/* ======================
+  ⭐ 右上 閉じるボタン
+====================== */
+.closeBtn{
+  position:fixed;
+  right:12px;
+  top:12px;
+  z-index:999;
+
+  width:44px;
+  height:44px;
+
+  border-radius:999px;
+  border:none;
+
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  font-size:24px;
+  font-weight:900;
+
+  display:none;
+}
+
+.closeBtn.show{
+  display:block;
+}
+
+
 </style>
 </head>
 
 <body>
 <canvas id="game" width="960" height="540"></canvas>
 
+<button id="closeBtn" class="closeBtn">×</button>
 <div class="flash" id="damageFlash"></div>
 <div class="fever" id="feverLayer"></div>
 
@@ -323,7 +352,13 @@ const SE_SRC = {
 ========================================================= */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.style.touchAction = "none"; // ←1回だけでOK
+const damageFlash = document.getElementById("damageFlash");
+const feverLayer = document.getElementById("feverLayer"); // ←これも必要
+
+canvas.style.touchAction = "none";
+
+// ⭐ 追加（×ボタン取得）
+const closeBtn = document.getElementById("closeBtn");
 
 
 // ⭐スマホ縦横フィット（見切れ防止）
@@ -548,6 +583,19 @@ function hitBtn(btn, x, y){
     ny < btn.y2
   );
 }
+// =============================
+// ⭐ ×ボタン → 音選択へ戻る
+// =============================
+closeBtn.addEventListener("click",()=>{
+
+  running = false;
+  stopBgm();
+  feverLayer.classList.remove("show");
+
+  state = STATE.SOUND;
+
+  closeBtn.classList.remove("show");
+});
 
 canvas.addEventListener("pointerdown",(e)=>{
   unlockAudioOnce();
@@ -2057,7 +2105,7 @@ ctx.strokeStyle = "rgba(0,0,0,0.4)";
 ctx.lineWidth = 6;
 
 const remainMs = GAME_MS - (Date.now() - startAt);
-const sec = Math.max(0, remainMs / 1000).toFixed(1);
+const sec = Math.ceil(Math.max(0, remainMs / 1000));
 
 ctx.strokeText(`TIME ${sec}`, canvas.width - 20, 20);
 ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
@@ -2123,6 +2171,15 @@ let lastTime = 0;
   10) 描画ループ（常時）
 ========================================================= */
 function drawFrame(time){
+
+
+// ⭐ ゲーム中だけ×表示
+if(state === STATE.GAME){
+  closeBtn.classList.add("show");
+}else{
+  closeBtn.classList.remove("show");
+}
+
   // ⭐ FPS差をなくす（超重要）
 if(!lastTime) lastTime = time;
 const delta = (time - lastTime) / 16.67;
