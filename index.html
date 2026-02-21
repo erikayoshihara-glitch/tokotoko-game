@@ -288,6 +288,7 @@ shareLINE: { x:0, y:0, w:0, h:0 }
 let state = STATE.SOUND;
 let soundOn = true;
 let mode = null; // "ch" | "mm"
+const FRAME_STATES_MOBILE = new Set([STATE.SOUND, STATE.COURSE, STATE.START, STATE.END]);
 
 /* =========================================================
   1) UI画像（ファイル名）
@@ -429,6 +430,7 @@ const ctx = canvas.getContext("2d");
 const damageFlash = document.getElementById("damageFlash");
 const feverLayer = document.getElementById("feverLayer");
 let groundY = 0;
+let mobileFrameRect = null;
 
 
 canvas.style.touchAction = "none";
@@ -474,11 +476,37 @@ function fitCanvas(){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  const scale = Math.min(vw/baseW, vh/baseH);
+  if(isMobile()){
+    const frameScale = Math.min(vw/baseW, vh/baseH);
+    const frameW = baseW * frameScale;
+    const frameH = baseH * frameScale;
+    const frameLeft = (vw - frameW) / 2;
+    const frameTop = (vh - frameH) / 2;
+    mobileFrameRect = { left: frameLeft, top: frameTop, width: frameW, height: frameH };
 
-  // ⭐スマホもPCも同じ計算（←ここが今回の修正ポイント）
-  canvas.style.width  = (baseW * scale) + "px";
-  canvas.style.height = (baseH * scale) + "px";
+    // 外枠画像の内側表示領域
+    const padL = frameW * 0.065;
+    const padR = frameW * 0.065;
+    const padT = frameH * 0.08;
+    const padB = frameH * 0.12;
+
+    canvas.style.position = "fixed";
+    canvas.style.left = (frameLeft + padL) + "px";
+    canvas.style.top = (frameTop + padT) + "px";
+    canvas.style.width = (frameW - padL - padR) + "px";
+    canvas.style.height = (frameH - padT - padB) + "px";
+    canvas.style.margin = "0";
+  }else{
+    const scale = Math.min(vw/baseW, vh/baseH);
+    canvas.style.position = "static";
+    canvas.style.left = "";
+    canvas.style.top = "";
+    canvas.style.width  = (baseW * scale) + "px";
+    canvas.style.height = (baseH * scale) + "px";
+    canvas.style.margin = "0";
+    mobileFrameRect = null;
+  }
+
   syncTitleLayout();
 }
 
@@ -498,7 +526,8 @@ function enterSoundSelect(){
 function syncTitleLayout(){
   if(!isMobile()) return;
 
-  const rect = canvas.getBoundingClientRect();
+  const rect = mobileFrameRect || canvas.getBoundingClientRect();
+  const rectBottom = rect.top + rect.height;
   const framePadX = rect.width * 0.08;
   const framePadTop = rect.height * 0.10;
   const framePadBottom = rect.height * 0.17;
@@ -520,7 +549,7 @@ function syncTitleLayout(){
   titleStartBtn.style.left = (rect.left + rect.width/2) + "px";
   titleStartBtn.style.transform = "translateX(-50%)";
   titleStartBtn.style.width = btnW + "px";
-  titleStartBtn.style.bottom = (window.innerHeight - rect.bottom + rect.height * 0.03) + "px";
+  titleStartBtn.style.bottom = (window.innerHeight - rectBottom + rect.height * 0.03) + "px";
 }
 
 
@@ -2302,6 +2331,7 @@ function roundRect(ctx, x, y, w, h, r){
 
 let lastTime = 0;
 let titleVisible = false;
+let frameOnlyVisible = false;
 
 function setTitleVisible(visible){
   if(titleVisible === visible) return;
@@ -2318,12 +2348,28 @@ function setTitleVisible(visible){
   }
 }
 
+function setMobileFrameVisible(visible){
+  if(!isMobile()){
+    frameOnlyVisible = false;
+    return;
+  }
+  if(frameOnlyVisible === visible) return;
+  frameOnlyVisible = visible;
+  if(visible){
+    syncTitleLayout();
+    titleBg.style.display = "block";
+  }else if(!titleVisible){
+    titleBg.style.display = "none";
+  }
+}
+
 /* =========================================================
   10) 描画ループ（常時）
 ========================================================= */
 function drawFrame(time){
 // ⭐ スマホタイトル表示
 if(state === STATE.TITLE){
+  setMobileFrameVisible(false);
   setTitleVisible(isMobile());
 
   requestAnimationFrame(drawFrame);
@@ -2331,6 +2377,7 @@ if(state === STATE.TITLE){
 
 }else{
   setTitleVisible(false);
+  setMobileFrameVisible(FRAME_STATES_MOBILE.has(state));
 }
 
 
