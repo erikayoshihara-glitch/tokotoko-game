@@ -179,7 +179,7 @@ height:auto;
 
 <!-- ⭐ スマホタイトル背景（videoの下） -->
 <img id="titleBg"
-src="sp_game_frame.png"
+src="ui_sound_sp.png"
 loading="lazy"
 decoding="async"
 style="
@@ -189,13 +189,14 @@ width:100vw;
 height:100vh;
 object-fit:cover;
 z-index:90;
+pointer-events:none;
 display:none;
 ">
 
 
 <!-- ⭐ スマホタイトル動画 -->
 <video id="titleVideo"
-src="ui_title.mp4"
+src="ui_main_sp2.mp4"
 playsinline muted loop autoplay
 preload="metadata"
 style="
@@ -212,6 +213,7 @@ width:auto;
 
 object-fit:contain;
 z-index:100;
+pointer-events:none;
 display:none;
 "></video>
 
@@ -288,7 +290,15 @@ shareLINE: { x:0, y:0, w:0, h:0 }
 let state = STATE.SOUND;
 let soundOn = true;
 let mode = null; // "ch" | "mm"
-const FRAME_STATES_MOBILE = new Set([STATE.SOUND, STATE.COURSE, STATE.START, STATE.END]);
+const FRAME_STATES_MOBILE = new Set([STATE.SOUND, STATE.COURSE, STATE.START, STATE.GAME, STATE.END]);
+const MOBILE_FRAME_BG = {
+  [STATE.SOUND]: "ui_sound_sp.png",
+  [STATE.TITLE]: "ui_main_sp.png",
+  [STATE.COURSE]: "ui_course_sp.png",
+  [STATE.START]: "ui_start_sp.png",
+  [STATE.GAME]: "background_sp.png",
+  [STATE.END]: "ui_score_sp.png"
+};
 
 /* =========================================================
   1) UI画像（ファイル名）
@@ -318,6 +328,7 @@ const UI = {};
 const ASSET = {
   bg: "background.jpg",
   bg_sp: "background_sp.jpg",
+  bg_sp2: "background_sp2.png",
 
   ui_jump: "ui_jump.png",
 
@@ -353,7 +364,14 @@ const ASSET = {
 
   // ⭐ シェアボタン
   share_x: "x_icon.png",
-  share_line: "line_icon.png"
+  share_line: "line_icon.png",
+
+  // ⭐ スマホ状態ごとの中身UI
+  ui_sound_sp2: "ui_sound_sp2.png",
+  ui_course_sp2: "ui_course_sp2.png",
+  ui_start_ch_sp: "ui_start_ch_sp.png",
+  ui_start_mm_sp: "ui_start_mm_sp.png",
+  ui_score_sp2: "ui_score_sp2.png"
 };
 
 
@@ -757,7 +775,8 @@ function handleTitleStart(e){
   if(state !== STATE.TITLE) return;
   if(e && e.preventDefault) e.preventDefault();
   unlockAudioOnce();
-  enterSoundSelect();
+  state = STATE.COURSE;
+  try{ titleVideo.pause(); }catch(e2){}
 }
 titleStartBtn.addEventListener("pointerdown", handleTitleStart);
 titleStartBtn.addEventListener("click", handleTitleStart);
@@ -771,7 +790,9 @@ canvas.addEventListener("pointerdown",(e)=>{
 // ==========================
 // ⭐ スマホタイトル → スタートボタン判定
 if(state === STATE.TITLE && isMobile()){
-  return; // タイトル中は他操作禁止
+  state = STATE.COURSE;
+  try{ titleVideo.pause(); }catch(e2){}
+  return;
 }
 
 
@@ -786,14 +807,14 @@ if (state === STATE.SOUND) {
     if (hitBtn(BTN.sound_on_sp, x, y)) {
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
-      state = STATE.COURSE;
+      state = STATE.TITLE;
       return;
     }
 
     if (hitBtn(BTN.sound_off_sp, x, y)) {
       soundOn = false;
       stopBgm();
-      state = STATE.COURSE;
+      state = STATE.TITLE;
       return;
     }
 
@@ -1875,6 +1896,85 @@ function drawUI(){
   ctx.fillStyle="#fff";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
+  if(isMobile()){
+    if(state===STATE.SOUND){
+      if(I.ui_sound_sp2?.ok){
+        ctx.drawImage(I.ui_sound_sp2.img,0,0,canvas.width,canvas.height);
+      }else{
+        drawFallbackText("ui_sound_sp2.png が見つからない");
+      }
+      return;
+    }
+
+    if(state===STATE.COURSE){
+      if(I.ui_course_sp2?.ok){
+        ctx.drawImage(I.ui_course_sp2.img,0,0,canvas.width,canvas.height);
+      }else{
+        drawFallbackText("ui_course_sp2.png が見つからない");
+      }
+      return;
+    }
+
+    if(state===STATE.START){
+      const key = mode==="ch" ? "ui_start_ch_sp" : "ui_start_mm_sp";
+      if(I[key]?.ok){
+        const pressed = performance.now() < startBtnPressUntil;
+        if(pressed){
+          ctx.save();
+          ctx.translate(canvas.width/2, canvas.height/2);
+          ctx.scale(0.96, 0.96);
+          ctx.translate(-canvas.width/2, -canvas.height/2);
+        }
+        ctx.drawImage(I[key].img,0,0,canvas.width,canvas.height);
+        if(pressed) ctx.restore();
+      }else{
+        drawFallbackText((mode==="ch" ? "ui_start_ch_sp.png" : "ui_start_mm_sp.png") + " が見つからない");
+      }
+      return;
+    }
+
+    if(state===STATE.END){
+      if(displayScore < score){
+        displayScore += Math.ceil((score - displayScore) * 0.08);
+        if(score - displayScore < 1) displayScore = score;
+      }
+
+      if(I.ui_score_sp2?.ok){
+        ctx.drawImage(I.ui_score_sp2.img,0,0,canvas.width,canvas.height);
+      }else{
+        drawFallbackText("ui_score_sp2.png が見つからない");
+      }
+
+      const panel = {
+        x: canvas.width * 0.08,
+        y: canvas.height * 0.18,
+        w: canvas.width * 0.84,
+        h: canvas.height * 0.56
+      };
+
+      ctx.save();
+      ctx.font = "bold 32px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#000";
+      ctx.strokeStyle = "#fff";
+      const text = "SCORE " + displayScore.toString().padStart(4,"0");
+      const scoreY = panel.y + panel.h * 0.20;
+      ctx.strokeText(text, canvas.width/2, scoreY);
+      ctx.fillText(text, canvas.width/2, scoreY);
+      ctx.restore();
+
+      const shareY = panel.y + panel.h * 0.70;
+      const btnSize = 70;
+      const gap = 24;
+      const center = canvas.width / 2;
+      BTN.shareX = { x: center - gap/2 - btnSize, y: shareY - btnSize/2, w: btnSize, h: btnSize };
+      BTN.shareLINE = { x: center + gap/2, y: shareY - btnSize/2, w: btnSize, h: btnSize };
+      drawShareBtn(BTN.shareX, "X");
+      drawShareBtn(BTN.shareLINE, "LINE");
+      return;
+    }
+  }
+
 
   if(state===STATE.SOUND){
 
@@ -2009,7 +2109,7 @@ return;
 
 function drawGame(){
   // 背景
-const bg = (isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg;
+const bg = (isMobile() && I.bg_sp2?.ok) ? I.bg_sp2 : ((isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg);
 
 if(bg && bg.ok){
   ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
@@ -2338,9 +2438,13 @@ function setTitleVisible(visible){
   titleVisible = visible;
   if(visible) syncTitleLayout();
   const display = visible ? "block" : "none";
+  if(visible && MOBILE_FRAME_BG[STATE.TITLE]){
+    titleBg.src = MOBILE_FRAME_BG[STATE.TITLE];
+  }
+  titleVideo.src = "ui_main_sp2.mp4";
   titleBg.style.display = display;
   titleVideo.style.display = display;
-  titleStartBtn.style.display = display;
+  titleStartBtn.style.display = "none";
   if(visible){
     titleVideo.play().catch(()=>{});
   }else{
@@ -2348,18 +2452,24 @@ function setTitleVisible(visible){
   }
 }
 
-function setMobileFrameVisible(visible){
+function setMobileFrameVisible(visible, stateKey){
   if(!isMobile()){
     frameOnlyVisible = false;
+    titleBg.style.display = "none";
+    titleVideo.style.display = "none";
+    titleStartBtn.style.display = "none";
     return;
   }
-  if(frameOnlyVisible === visible) return;
-  frameOnlyVisible = visible;
   if(visible){
     syncTitleLayout();
+    if(MOBILE_FRAME_BG[stateKey]){
+      titleBg.src = MOBILE_FRAME_BG[stateKey];
+    }
     titleBg.style.display = "block";
+    frameOnlyVisible = true;
   }else if(!titleVisible){
     titleBg.style.display = "none";
+    frameOnlyVisible = false;
   }
 }
 
@@ -2369,7 +2479,7 @@ function setMobileFrameVisible(visible){
 function drawFrame(time){
 // ⭐ スマホタイトル表示
 if(state === STATE.TITLE){
-  setMobileFrameVisible(false);
+  setMobileFrameVisible(false, state);
   setTitleVisible(isMobile());
 
   requestAnimationFrame(drawFrame);
@@ -2377,7 +2487,7 @@ if(state === STATE.TITLE){
 
 }else{
   setTitleVisible(false);
-  setMobileFrameVisible(FRAME_STATES_MOBILE.has(state));
+  setMobileFrameVisible(FRAME_STATES_MOBILE.has(state), state);
 }
 
 
