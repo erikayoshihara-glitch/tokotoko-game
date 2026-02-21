@@ -39,6 +39,15 @@ width:min(100vw, calc(100dvh * (960/540)));
 height:auto;
 }
 
+@media (max-width: 900px){
+  html,body{
+    background:
+      radial-gradient(circle at 20px 20px, rgba(169,153,238,.45) 2px, transparent 2px) 0 0/68px 68px,
+      radial-gradient(circle at 42px 42px, rgba(169,153,238,.28) 2px, transparent 2px) 0 0/68px 68px,
+      #cdc4ef;
+  }
+}
+
   /* ===== 演出 ===== */
   .flash{
     position:fixed; inset:0;
@@ -276,7 +285,7 @@ shareLINE: { x:0, y:0, w:0, h:0 }
 };
 
 
-let state = detectMobile() ? STATE.TITLE : STATE.SOUND;
+let state = STATE.SOUND;
 let soundOn = true;
 let mode = null; // "ch" | "mm"
 
@@ -448,8 +457,8 @@ function fitCanvas(){
 
   // ⭐スマホは縦 / PCは横
   if(isMobile()){
-    baseW = 540;
-    baseH = 960;
+    baseW = 720;
+    baseH = 1560;
   }else{
     baseW = 960;
     baseH = 540;
@@ -460,7 +469,7 @@ function fitCanvas(){
   canvas.height = baseH;
 
   // 地面位置
-  groundY = canvas.height - (isMobile()?300:200);
+  groundY = canvas.height - (isMobile()?430:200);
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -470,6 +479,7 @@ function fitCanvas(){
   // ⭐スマホもPCも同じ計算（←ここが今回の修正ポイント）
   canvas.style.width  = (baseW * scale) + "px";
   canvas.style.height = (baseH * scale) + "px";
+  syncTitleLayout();
 }
 
 window.addEventListener("resize", fitCanvas);
@@ -483,6 +493,34 @@ const loadingEl   = document.getElementById("loading");
 function enterSoundSelect(){
   state = STATE.SOUND;
   try{ titleVideo.pause(); }catch(e){}
+}
+
+function syncTitleLayout(){
+  if(!isMobile()) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const framePadX = rect.width * 0.08;
+  const framePadTop = rect.height * 0.10;
+  const framePadBottom = rect.height * 0.17;
+
+  titleBg.style.left = rect.left + "px";
+  titleBg.style.top = rect.top + "px";
+  titleBg.style.width = rect.width + "px";
+  titleBg.style.height = rect.height + "px";
+  titleBg.style.transform = "none";
+
+  titleVideo.style.left = (rect.left + framePadX) + "px";
+  titleVideo.style.top = (rect.top + framePadTop) + "px";
+  titleVideo.style.width = (rect.width - framePadX * 2) + "px";
+  titleVideo.style.height = (rect.height - framePadTop - framePadBottom) + "px";
+  titleVideo.style.transform = "none";
+  titleVideo.style.objectFit = "cover";
+
+  const btnW = Math.min(rect.width * 0.78, 420);
+  titleStartBtn.style.left = (rect.left + rect.width/2) + "px";
+  titleStartBtn.style.transform = "translateX(-50%)";
+  titleStartBtn.style.width = btnW + "px";
+  titleStartBtn.style.bottom = (window.innerHeight - rect.bottom + rect.height * 0.03) + "px";
 }
 
 
@@ -2268,6 +2306,7 @@ let titleVisible = false;
 function setTitleVisible(visible){
   if(titleVisible === visible) return;
   titleVisible = visible;
+  if(visible) syncTitleLayout();
   const display = visible ? "block" : "none";
   titleBg.style.display = display;
   titleVideo.style.display = display;
@@ -2415,10 +2454,7 @@ function drawBattery(x,y,hp){
   }
   ctx.restore();
 }
-// ⭐ 起動時：スマホだけタイトル表示
-if(isMobile()){
-  state = STATE.TITLE;
-}
+// ⭐ 起動状態はPC/SPともにSOUND
 
 boot();
 function popHP(){} 
