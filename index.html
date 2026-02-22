@@ -17,8 +17,9 @@
 html,body{
 margin:0;
 background:#fff;
-overflow:hidden;
-height:100dvh;
+overflow:visible;
+min-height:100vh;
+position:relative;
 
 /* ⭐中央固定 */
 display:flex;
@@ -33,18 +34,34 @@ display:block;
 margin:0;
 background:#fff;
 touch-action:manipulation;
+position:relative;
+z-index:95;
 
 /* ⭐縦横どっちでも収まるサイズ */
 width:min(100vw, calc(100dvh * (960/540)));
 height:auto;
 }
 
-@media (max-width: 900px){
+#titleBg{
+  display:none;
+}
+
+@media (max-width:900px){
   html,body{
-    background:
-      radial-gradient(circle at 20px 20px, rgba(169,153,238,.45) 2px, transparent 2px) 0 0/68px 68px,
-      radial-gradient(circle at 42px 42px, rgba(169,153,238,.28) 2px, transparent 2px) 0 0/68px 68px,
-      #cdc4ef;
+    background:#bbdfff;
+  }
+  canvas{
+    background:transparent;
+  }
+  #titleBg{
+    position:absolute;
+    top:308px;
+    left:42px;
+    width:calc(100% - 84px);
+    height:auto;
+    display:block;
+    pointer-events:none;
+    z-index:9999;
   }
 }
 
@@ -171,57 +188,61 @@ height:auto;
   display:block;
 }
 
+.middle-image,
+.middle-video{
+  position:absolute;
+  left:42px;
+  right:42px;
+  top:308px;
+  width:calc(100% - 84px);
+  margin:0;
+  padding:0;
+  display:block;
+  object-fit:cover;
+  box-sizing:border-box;
+  z-index:140;
+  pointer-events:none;
+}
+
+.middle-image,
+.middle-video{
+  display:none;
+}
+
 </style>
 </head>
 
 <body>
 <canvas id="game" width="960" height="540"></canvas>
+<img id="mobileLayer"
+class="middle-image"
+src="ui_sound_sp2.png"
+alt=""
+>
 
 <!-- ⭐ スマホタイトル背景（videoの下） -->
 <img id="titleBg"
-src="ui_sound_sp.png"
+src="ui_sound_sp2.png"
 loading="lazy"
 decoding="async"
 style="
-position:fixed;
-inset:0;
-width:100vw;
-height:100vh;
-object-fit:cover;
-z-index:90;
 pointer-events:none;
-display:none;
 ">
 
 
 <!-- ⭐ スマホタイトル動画 -->
 <video id="titleVideo"
-src="ui_main_sp2.mp4"
+src="ui_start_sp.mp4"
 playsinline muted loop autoplay
 preload="metadata"
-style="
-position:fixed;
-left:50%;
-top:50%;
-transform:translate(-50%,-50%);
-
-/* ⭐ 上下30px余白 */
-height:calc(100vh - 60px);
-
-/* ⭐ 左右は自動で余白 */
-width:auto;
-
-object-fit:contain;
-z-index:100;
-pointer-events:none;
-display:none;
-"></video>
+class="middle-video"
+></video>
 
 
 
 <!-- ⭐ スタートボタン -->
 <img id="titleStartBtn"
-src="btn_title_start.png"
+src="btn_title_start_sp.png"
 style="
 position:fixed;
 left:50%;
@@ -299,13 +320,19 @@ const MOBILE_FRAME_BG = {
   [STATE.GAME]: "background_sp.png",
   [STATE.END]: "ui_score_sp.png"
 };
+const MOBILE_INNER_SRC = {
+  [STATE.SOUND]: "ui_sound_sp2.png",
+  [STATE.COURSE]: "ui_course_sp2.png",
+  [STATE.GAME]: "background_sp2.png",
+  [STATE.END]: "ui_score_sp2.png"
+};
 
 /* =========================================================
   1) UI画像（ファイル名）
 ========================================================= */
 const UI_SRC = {
   sound:  "ui_sound_select.png",
-  sound_sp: "ui_sound_select_sp.png",
+  sound_sp: "ui_sound_sp2.png",
 
   course: "ui_course_select.png",
   course_sp: "ui_course_select_sp.png",
@@ -321,14 +348,16 @@ const UI_SRC = {
 };
 
 const UI = {};
+let mobileUiFallbackMsg = "";
 
 /* =========================================================
   2) ゲーム用アセット（画像）
 ========================================================= */
 const ASSET = {
   bg: "background.jpg",
-  bg_sp: "background_sp.jpg",
+  bg_sp: "background_sp.png",
   bg_sp2: "background_sp2.png",
+  ui_main_sp: "ui_main_sp.png",
 
   ui_jump: "ui_jump.png",
 
@@ -443,6 +472,8 @@ const canvas = document.getElementById("game");
 const titleBg = document.getElementById("titleBg");
 const titleVideo = document.getElementById("titleVideo");
 const titleStartBtn = document.getElementById("titleStartBtn");
+const mobileLayer = document.getElementById("mobileLayer");
+titleVideo.poster = "ui_main_sp.png";
 
 const ctx = canvas.getContext("2d");
 const damageFlash = document.getElementById("damageFlash");
@@ -459,11 +490,20 @@ const closeBtn = document.getElementById("closeBtn");
 
 // ⭐スマホ縦横フィット（見切れ防止）
 function detectMobile(){
-  return /iPhone|Android.+Mobile|iPad|iPod/i.test(navigator.userAgent);
+  const ua = navigator.userAgent || "";
+  const uaMobile = /iPhone|Android.+Mobile|iPad|iPod/i.test(ua);
+  const uaDataMobile = !!(navigator.userAgentData && navigator.userAgentData.mobile);
+  // iPadOS desktop UA対策: Macintosh なのにタッチポイントが多い
+  const ipadDesktopMode = /Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1;
+  return uaMobile || uaDataMobile || ipadDesktopMode;
 }
 let mobileMode = detectMobile();
 function isMobile(){
   return mobileMode;
+}
+function useOverlayLayout(){
+  // PCには絶対適用しない
+  return isMobile();
 }
 function refreshDeviceMode(){
   mobileMode = detectMobile();
@@ -503,8 +543,8 @@ function fitCanvas(){
     mobileFrameRect = { left: frameLeft, top: frameTop, width: frameW, height: frameH };
 
     // 外枠画像の内側表示領域
-    const padL = frameW * 0.065;
-    const padR = frameW * 0.065;
+    const padL = 0;
+    const padR = 0;
     const padT = frameH * 0.08;
     const padB = frameH * 0.12;
 
@@ -526,6 +566,7 @@ function fitCanvas(){
   }
 
   syncTitleLayout();
+  syncMobileLayerLayout();
 }
 
 window.addEventListener("resize", fitCanvas);
@@ -550,12 +591,6 @@ function syncTitleLayout(){
   const framePadTop = rect.height * 0.10;
   const framePadBottom = rect.height * 0.17;
 
-  titleBg.style.left = rect.left + "px";
-  titleBg.style.top = rect.top + "px";
-  titleBg.style.width = rect.width + "px";
-  titleBg.style.height = rect.height + "px";
-  titleBg.style.transform = "none";
-
   titleVideo.style.left = (rect.left + framePadX) + "px";
   titleVideo.style.top = (rect.top + framePadTop) + "px";
   titleVideo.style.width = (rect.width - framePadX * 2) + "px";
@@ -568,6 +603,18 @@ function syncTitleLayout(){
   titleStartBtn.style.transform = "translateX(-50%)";
   titleStartBtn.style.width = btnW + "px";
   titleStartBtn.style.bottom = (window.innerHeight - rectBottom + rect.height * 0.03) + "px";
+}
+
+function syncMobileLayerLayout(){
+  if(!useOverlayLayout()) return;
+  mobileLayer.style.left = "42px";
+  mobileLayer.style.right = "42px";
+  mobileLayer.style.width = "calc(100% - 84px)";
+  mobileLayer.style.top = "308px";
+  titleVideo.style.left = "42px";
+  titleVideo.style.right = "42px";
+  titleVideo.style.width = "calc(100% - 84px)";
+  titleVideo.style.top = "308px";
 }
 
 
@@ -772,14 +819,12 @@ closeBtn.addEventListener("click",()=>{
 });
 
 function handleTitleStart(e){
-  if(state !== STATE.TITLE) return;
   if(e && e.preventDefault) e.preventDefault();
-  unlockAudioOnce();
-  state = STATE.COURSE;
-  try{ titleVideo.pause(); }catch(e2){}
 }
-titleStartBtn.addEventListener("pointerdown", handleTitleStart);
-titleStartBtn.addEventListener("click", handleTitleStart);
+if(titleStartBtn){
+  titleStartBtn.addEventListener("pointerdown", handleTitleStart);
+  titleStartBtn.addEventListener("click", handleTitleStart);
+}
 
 canvas.addEventListener("pointerdown",(e)=>{
   unlockAudioOnce();
@@ -791,7 +836,6 @@ canvas.addEventListener("pointerdown",(e)=>{
 // ⭐ スマホタイトル → スタートボタン判定
 if(state === STATE.TITLE && isMobile()){
   state = STATE.COURSE;
-  try{ titleVideo.pause(); }catch(e2){}
   return;
 }
 
@@ -1893,98 +1937,16 @@ function talk(type){
   9) 描画（状態別）
 ========================================================= */
 function drawUI(){
-  ctx.fillStyle="#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  if(isMobile()){
-    if(state===STATE.SOUND){
-      if(I.ui_sound_sp2?.ok){
-        ctx.drawImage(I.ui_sound_sp2.img,0,0,canvas.width,canvas.height);
-      }else{
-        drawFallbackText("ui_sound_sp2.png が見つからない");
-      }
-      return;
-    }
-
-    if(state===STATE.COURSE){
-      if(I.ui_course_sp2?.ok){
-        ctx.drawImage(I.ui_course_sp2.img,0,0,canvas.width,canvas.height);
-      }else{
-        drawFallbackText("ui_course_sp2.png が見つからない");
-      }
-      return;
-    }
-
-    if(state===STATE.START){
-      const key = mode==="ch" ? "ui_start_ch_sp" : "ui_start_mm_sp";
-      if(I[key]?.ok){
-        const pressed = performance.now() < startBtnPressUntil;
-        if(pressed){
-          ctx.save();
-          ctx.translate(canvas.width/2, canvas.height/2);
-          ctx.scale(0.96, 0.96);
-          ctx.translate(-canvas.width/2, -canvas.height/2);
-        }
-        ctx.drawImage(I[key].img,0,0,canvas.width,canvas.height);
-        if(pressed) ctx.restore();
-      }else{
-        drawFallbackText((mode==="ch" ? "ui_start_ch_sp.png" : "ui_start_mm_sp.png") + " が見つからない");
-      }
-      return;
-    }
-
-    if(state===STATE.END){
-      if(displayScore < score){
-        displayScore += Math.ceil((score - displayScore) * 0.08);
-        if(score - displayScore < 1) displayScore = score;
-      }
-
-      if(I.ui_score_sp2?.ok){
-        ctx.drawImage(I.ui_score_sp2.img,0,0,canvas.width,canvas.height);
-      }else{
-        drawFallbackText("ui_score_sp2.png が見つからない");
-      }
-
-      const panel = {
-        x: canvas.width * 0.08,
-        y: canvas.height * 0.18,
-        w: canvas.width * 0.84,
-        h: canvas.height * 0.56
-      };
-
-      ctx.save();
-      ctx.font = "bold 32px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#000";
-      ctx.strokeStyle = "#fff";
-      const text = "SCORE " + displayScore.toString().padStart(4,"0");
-      const scoreY = panel.y + panel.h * 0.20;
-      ctx.strokeText(text, canvas.width/2, scoreY);
-      ctx.fillText(text, canvas.width/2, scoreY);
-      ctx.restore();
-
-      const shareY = panel.y + panel.h * 0.70;
-      const btnSize = 70;
-      const gap = 24;
-      const center = canvas.width / 2;
-      BTN.shareX = { x: center - gap/2 - btnSize, y: shareY - btnSize/2, w: btnSize, h: btnSize };
-      BTN.shareLINE = { x: center + gap/2, y: shareY - btnSize/2, w: btnSize, h: btnSize };
-      drawShareBtn(BTN.shareX, "X");
-      drawShareBtn(BTN.shareLINE, "LINE");
-      return;
-    }
-  }
-
 
   if(state===STATE.SOUND){
 
     const img = isMobile()?UI.sound_sp:UI.sound;
 
     if(img?.ok){
-  ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-}else{
-  drawFallbackText("ui_sound_select.png が見つからない");
-}
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }else{
+      drawFallbackText("ui_sound_select.png が見つからない");
+    }
     return;
   }
 
@@ -2002,80 +1964,57 @@ function drawUI(){
 
   if(state===STATE.START){
 
-  const img = isMobile()?UI.start_sp:UI.start;
+    const img = isMobile()?UI.start_sp:UI.start;
 
-  if(img?.ok){
+    if(img?.ok){
 
-    // ⭐押した瞬間チェック
-    const pressed = performance.now() < startBtnPressUntil;
+      const pressed = performance.now() < startBtnPressUntil;
 
-    // ⭐押した時だけ少し縮む
-    if(pressed){
-      ctx.save();
-      ctx.translate(canvas.width/2, canvas.height/2);
-      ctx.scale(0.96, 0.96);
-      ctx.translate(-canvas.width/2, -canvas.height/2);
-    }
-
-    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-
-    if(pressed) ctx.restore();
-
-  }else{
-    drawFallbackText("ui_start.png が見つからない");
-  }
-  return;
-}
-
-if(state===STATE.END){
-
-  // ⭐ スコアカウントアップ
-  if(displayScore < score){
-    displayScore += Math.ceil((score - displayScore) * 0.08);
-
-    if(score - displayScore < 1){
-      displayScore = score;
-    }
-  }
-
-  const img = lastCleared
-    ? (isMobile()?UI.clear_sp:UI.clear)
-    : (isMobile()?UI.over_sp:UI.over);
-
-  if(img?.ok){
-    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-  }
-
-  // ⭐ SCORE表示（白枠内に配置）
-  const panel = isMobile()
-    ? {
-        x: canvas.width * 0.05,
-        y: canvas.height * 0.28,
-        w: canvas.width * 0.90,
-        h: canvas.height * 0.52
+      if(pressed){
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.scale(0.96, 0.96);
+        ctx.translate(-canvas.width/2, -canvas.height/2);
       }
-    : {
-        x: canvas.width * 0.27,
-        y: canvas.height * 0.47,
-        w: canvas.width * 0.46,
-        h: canvas.height * 0.30
-      };
 
-  ctx.save();
-ctx.font = isMobile() ? "bold 32px sans-serif" : "bold 48px sans-serif";
-ctx.textAlign = "center";
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
 
-ctx.fillStyle = "#000";    
-ctx.strokeStyle = "#fff";   
+      if(pressed) ctx.restore();
 
-const text = "SCORE " + displayScore.toString().padStart(4,"0");
+    }else{
+      drawFallbackText("ui_start.png が見つからない");
+    }
+    return;
+  }
 
-const scoreY = panel.y + panel.h * (isMobile() ? 0.22 : 0.26);
-ctx.strokeText(text, canvas.width/2, scoreY);
-ctx.fillText(text, canvas.width/2, scoreY);
+  if(state===STATE.END){
 
-ctx.restore();
+    if(displayScore < score){
+      displayScore += Math.ceil((score - displayScore) * 0.08);
+      if(score - displayScore < 1) displayScore = score;
+    }
 
+    const img = lastCleared
+      ? (isMobile()?UI.clear_sp:UI.clear)
+      : (isMobile()?UI.over_sp:UI.over);
+
+    if(img?.ok){
+      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+    }
+
+    ctx.save();
+    ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#000";
+    ctx.strokeStyle = "#fff";
+
+    const text = "SCORE " + displayScore.toString().padStart(4,"0");
+    ctx.strokeText(text, canvas.width/2, canvas.height*0.52);
+    ctx.fillText(text, canvas.width/2, canvas.height*0.52);
+    ctx.restore();
+       return;
+  }
+}
 
 // =========================
 // ⭐ シェアボタン
@@ -2393,6 +2332,106 @@ function drawFallbackText(msg){
   ctx.restore();
 }
 
+const trimCache = new WeakMap();
+
+function getTrimRect(img){
+  const cached = trimCache.get(img);
+  if(cached) return cached;
+
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ictx = c.getContext("2d", { willReadFrequently: true });
+  ictx.drawImage(img, 0, 0, w, h);
+  const data = ictx.getImageData(0, 0, w, h).data;
+
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for(let y=0; y<h; y++){
+    for(let x=0; x<w; x++){
+      const i = (y*w + x) * 4;
+      const a = data[i+3];
+      if(a < 8) continue;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const nearWhite = (r > 235 && g > 235 && b > 235);
+      if(nearWhite) continue;
+      if(x < minX) minX = x;
+      if(y < minY) minY = y;
+      if(x > maxX) maxX = x;
+      if(y > maxY) maxY = y;
+    }
+  }
+
+  const rect = (maxX >= minX && maxY >= minY)
+    ? { sx:minX, sy:minY, sw:maxX-minX+1, sh:maxY-minY+1 }
+    : { sx:0, sy:0, sw:w, sh:h };
+  trimCache.set(img, rect);
+  return rect;
+}
+
+function drawCoverToRect(media, dx, dy, dw, dh, srcRect=null){
+  const mw = media.videoWidth || media.naturalWidth || 0;
+  const mh = media.videoHeight || media.naturalHeight || 0;
+  if(!mw || !mh) return null;
+
+  let sx = 0;
+  let sy = 0;
+  let sw = mw;
+  let sh = mh;
+  if(srcRect){
+    sx = srcRect.sx;
+    sy = srcRect.sy;
+    sw = srcRect.sw;
+    sh = srcRect.sh;
+  }
+
+  // object-fit: cover 相当（余白なし）
+  const scale = Math.max(dw / sw, dh / sh);
+  const cropW = dw / scale;
+  const cropH = dh / scale;
+  const cx = sx + (sw - cropW) / 2;
+  const cy = sy + (sh - cropH) / 2;
+  ctx.drawImage(media, cx, cy, cropW, cropH, dx, dy, dw, dh);
+  return {x:dx,y:dy,w:dw,h:dh};
+}
+
+function ensureUiVideo(src){
+  if(titleVideo.dataset.uiSrc !== src){
+    try{ titleVideo.pause(); }catch(e){}
+    titleVideo.src = src;
+    titleVideo.dataset.uiSrc = src;
+    titleVideo.load();
+  }
+  const p = titleVideo.play();
+  if(p && p.catch) p.catch(()=>{});
+}
+
+function drawCenteredLayer(imgObj, maxRatio=0.96, trimWhite=false, yOffsetRatio=0, cropOverride=null){
+  if(!imgObj?.ok) return null;
+  const iw = imgObj.img.naturalWidth;
+  const ih = imgObj.img.naturalHeight;
+  if(!iw || !ih) return null;
+  let src;
+  if(cropOverride){
+    src = {
+      sx: Math.floor(iw * cropOverride.x),
+      sy: Math.floor(ih * cropOverride.y),
+      sw: Math.floor(iw * cropOverride.w),
+      sh: Math.floor(ih * cropOverride.h)
+    };
+  }else{
+    src = trimWhite ? getTrimRect(imgObj.img) : { sx:0, sy:0, sw:iw, sh:ih };
+  }
+  const scale = Math.min((canvas.width * maxRatio) / src.sw, (canvas.height * maxRatio) / src.sh);
+  const w = src.sw * scale;
+  const h = src.sh * scale;
+  const x = (canvas.width - w) / 2;
+  const y = (canvas.height - h) / 2 + canvas.height * yOffsetRatio;
+  ctx.drawImage(imgObj.img, src.sx, src.sy, src.sw, src.sh, x, y, w, h);
+  return {x,y,w,h};
+}
+
 function drawStar(ctx, x, y, spikes, outerRadius, innerRadius){
   let rot = Math.PI / 2 * 3;
   let step = Math.PI / spikes;
@@ -2433,64 +2472,113 @@ let lastTime = 0;
 let titleVisible = false;
 let frameOnlyVisible = false;
 
-function setTitleVisible(visible){
-  if(titleVisible === visible) return;
-  titleVisible = visible;
-  if(visible) syncTitleLayout();
-  const display = visible ? "block" : "none";
-  if(visible && MOBILE_FRAME_BG[STATE.TITLE]){
-    titleBg.src = MOBILE_FRAME_BG[STATE.TITLE];
+function applyMobileBodyBg(stateKey){
+  void stateKey;
+  if(!isMobile()) return;
+  document.body.style.background = "#bbdfff";
+}
+
+function syncMobileOverlayByState(stateKey){
+  if(!isMobile()){
+    mobileLayer.style.display = "none";
+    titleVideo.style.display = "none";
+    return;
   }
-  titleVideo.src = "ui_main_sp2.mp4";
-  titleBg.style.display = display;
-  titleVideo.style.display = display;
-  titleStartBtn.style.display = "none";
-  if(visible){
+
+  applyMobileBodyBg(stateKey);
+  syncMobileLayerLayout();
+
+  mobileLayer.style.display = "none";
+  titleVideo.style.display = "none";
+
+  if(stateKey === STATE.SOUND){
+    mobileLayer.onerror = ()=>{
+      mobileUiFallbackMsg = "ui_sound_sp2.png が見つからない";
+    };
+    mobileLayer.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    mobileLayer.src = "ui_sound_sp2.png";
+    mobileLayer.style.display = "block";
+    return;
+  }
+
+  if(stateKey === STATE.TITLE){
+    if(titleVideo.dataset.uiSrc !== "ui_start_sp.mp4"){
+      titleVideo.src = "ui_start_sp.mp4";
+      titleVideo.dataset.uiSrc = "ui_start_sp.mp4";
+      titleVideo.load();
+    }
+    titleVideo.style.display = "block";
     titleVideo.play().catch(()=>{});
-  }else{
-    try{ titleVideo.pause(); }catch(e){}
+    return;
+  }
+
+  if(stateKey === STATE.COURSE){
+    mobileLayer.onerror = ()=>{
+      mobileUiFallbackMsg = "ui_course_sp2.png が見つからない";
+    };
+    mobileLayer.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    mobileLayer.src = "ui_course_sp2.png";
+    mobileLayer.style.display = "block";
+    return;
+  }
+
+  if(stateKey === STATE.START){
+    mobileLayer.onerror = ()=>{
+      mobileUiFallbackMsg = ((mode === "ch") ? "ui_start_ch_sp.png" : "ui_start_mm_sp.png") + " が見つからない";
+    };
+    mobileLayer.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    mobileLayer.src = (mode === "ch") ? "ui_start_ch_sp.png" : "ui_start_mm_sp.png";
+    mobileLayer.style.display = "block";
+    return;
+  }
+
+  if(stateKey === STATE.END){
+    mobileLayer.onerror = ()=>{
+      mobileUiFallbackMsg = "ui_score_sp2.png が見つからない";
+    };
+    mobileLayer.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    mobileLayer.src = "ui_score_sp2.png";
+    mobileLayer.style.display = "block";
+    return;
+  }
+
+  if(stateKey === STATE.GAME){
+    mobileLayer.src = "background_sp2.png";
+    mobileLayer.style.display = "none";
   }
 }
 
+function setTitleVisible(visible){
+  void visible;
+}
+
 function setMobileFrameVisible(visible, stateKey){
-  if(!isMobile()){
-    frameOnlyVisible = false;
-    titleBg.style.display = "none";
+  if(!visible){
+    mobileLayer.style.display = "none";
     titleVideo.style.display = "none";
-    titleStartBtn.style.display = "none";
     return;
   }
-  if(visible){
-    syncTitleLayout();
-    if(MOBILE_FRAME_BG[stateKey]){
-      titleBg.src = MOBILE_FRAME_BG[stateKey];
-    }
-    titleBg.style.display = "block";
-    frameOnlyVisible = true;
-  }else if(!titleVisible){
-    titleBg.style.display = "none";
-    frameOnlyVisible = false;
-  }
+  syncMobileOverlayByState(stateKey);
 }
 
 /* =========================================================
   10) 描画ループ（常時）
 ========================================================= */
 function drawFrame(time){
-// ⭐ スマホタイトル表示
-if(state === STATE.TITLE){
-  setMobileFrameVisible(false, state);
-  setTitleVisible(isMobile());
-
-  requestAnimationFrame(drawFrame);
-  return;
-
+if(isMobile()){
+  syncMobileOverlayByState(state);
 }else{
-  setTitleVisible(false);
-  setMobileFrameVisible(FRAME_STATES_MOBILE.has(state), state);
+  mobileLayer.style.display = "none";
+  titleVideo.style.display = "none";
 }
-
-
 // ⭐ ゲーム中だけ×表示
 if(state === STATE.GAME){
   closeBtn.classList.add("show");
@@ -2503,7 +2591,7 @@ if(!lastTime) lastTime = time;
 const delta = (time - lastTime) / 16.67;
 lastTime = time;
 
-  if(state===STATE.SOUND || state===STATE.COURSE || state===STATE.START || state===STATE.END){
+  if(state===STATE.TITLE || state===STATE.SOUND || state===STATE.COURSE || state===STATE.START || state===STATE.END){
     drawUI();
     requestAnimationFrame(drawFrame);
     return;
@@ -2537,6 +2625,10 @@ async function boot(){
   });
   const loaded = await Promise.all(keys.map(k => loadOneImage(ASSET[k])));
   keys.forEach((k, idx)=>{ I[k] = loaded[idx]; });
+
+  mobileLayer.style.display = "none";
+  titleVideo.style.display = "none";
+  titleStartBtn.style.display = "none";
 
   loadingEl.style.display = "none";
 requestAnimationFrame(drawFrame);
