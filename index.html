@@ -48,20 +48,25 @@ height:auto;
 
 @media (max-width:900px){
   html,body{
-    background:#bbdfff;
+    background:transparent;
+    width:100vw;
+    min-height:100dvh;
+    height:100dvh;
+    overflow:hidden;
+    overscroll-behavior:none;
   }
   canvas{
     background:transparent;
   }
   #titleBg{
     position:absolute;
-    top:308px;
-    left:42px;
-    width:calc(100% - 84px);
+    top:80px;
+    left:0;
+    width:100%;
     height:auto;
-    display:block;
+    display:none;
     pointer-events:none;
-    z-index:9999;
+    z-index:99999;
   }
 }
 
@@ -71,14 +76,14 @@ height:auto;
     background:rgba(255,0,0,.28);
     opacity:0; pointer-events:none;
     transition:opacity .15s;
-    z-index:20;
+    z-index:120;
   }
   .flash.show{ opacity:1; }
 
   .fever{
     position:fixed; inset:0;
     opacity:0; pointer-events:none;
-    z-index:15;
+    z-index:115;
     background: linear-gradient(
       120deg,
       rgba(255,0,0,.24),
@@ -188,6 +193,16 @@ height:auto;
   display:block;
 }
 
+.shareTapBtn{
+  position:fixed;
+  display:none;
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  z-index:130;
+}
+
 .middle-image,
 .middle-video{
   position:absolute;
@@ -232,7 +247,7 @@ pointer-events:none;
 
 <!-- ⭐ スマホタイトル動画 -->
 <video id="titleVideo"
-src="ui_start_sp.mp4"
+src=""
 playsinline muted loop autoplay
 preload="metadata"
 class="middle-video"
@@ -261,6 +276,8 @@ display:none;
 
 
 <button id="closeBtn" class="closeBtn">×</button>
+<button id="shareTapX" class="shareTapBtn" aria-label="Xでシェア"></button>
+<button id="shareTapLINE" class="shareTapBtn" aria-label="LINEでシェア"></button>
 <div class="flash" id="damageFlash"></div>
 <div class="fever" id="feverLayer"></div>
 
@@ -307,10 +324,20 @@ shareLINE: { x:0, y:0, w:0, h:0 }
 
 };
 
+const SOUND_BTN_LAYOUT_SP = {
+  left: 27 / 960,
+  top: 1386 / 1676,
+  width: 906 / 960,
+  height: 290 / 1676
+};
+
 
 let state = STATE.SOUND;
 let soundOn = true;
 let mode = null; // "ch" | "mm"
+const MOBILE_UI_ASPECT = 1313 / 1038;
+const MOBILE_STAGE_TOP = 80;
+const MOBILE_SIDE_INSET = 0;
 const FRAME_STATES_MOBILE = new Set([STATE.SOUND, STATE.COURSE, STATE.START, STATE.GAME, STATE.END]);
 const MOBILE_FRAME_BG = {
   [STATE.SOUND]: "ui_sound_sp.png",
@@ -325,6 +352,14 @@ const MOBILE_INNER_SRC = {
   [STATE.COURSE]: "ui_course_sp2.png",
   [STATE.GAME]: "background_sp2.png",
   [STATE.END]: "ui_score_sp2.png"
+};
+const MOBILE_FOOTER_BTN_BY_STATE = {
+  [STATE.TITLE]: "btn_sound_on",
+  [STATE.SOUND]: "btn_exit",
+  [STATE.COURSE]: "btn_course",
+  [STATE.START]: "btn_start",
+  [STATE.GAME]: "btn_jump_footer",
+  [STATE.END]: "btn_retry"
 };
 
 /* =========================================================
@@ -358,6 +393,13 @@ const ASSET = {
   bg_sp: "background_sp.png",
   bg_sp2: "background_sp2.png",
   ui_main_sp: "ui_main_sp.png",
+  btn_sound_sp: "btn_sound_sp.png",
+  btn_exit: "btn_exit.png",
+  btn_sound_on: "btn_sound_on.png",
+  btn_course: "btn_course.png",
+  btn_start: "btn_start.png",
+  btn_jump_footer: "btn_jump.png",
+  btn_retry: "btn_retry.png",
 
   ui_jump: "ui_jump.png",
 
@@ -447,6 +489,7 @@ const ENEMY_Y_OFFSET = {
 const SE_SRC = {
   // 操作
   jump: "se_jump.mp3",
+  countdown: "se_countdown.mp3",
 
   // 取得
   lightning: "se_get_lightning.mp3",                 // ⚡
@@ -486,6 +529,44 @@ canvas.style.touchAction = "none";
 
 // ⭐ 追加（×ボタン取得）
 const closeBtn = document.getElementById("closeBtn");
+const shareTapXBtn = document.getElementById("shareTapX");
+const shareTapLINEBtn = document.getElementById("shareTapLINE");
+
+function hideMobileEndShareButtons(){
+  if(shareTapXBtn) shareTapXBtn.style.display = "none";
+  if(shareTapLINEBtn) shareTapLINEBtn.style.display = "none";
+}
+function syncMobileEndShareButtons(){
+  if(!shareTapXBtn || !shareTapLINEBtn) return;
+  if(!isMobile() || state !== STATE.END){
+    hideMobileEndShareButtons();
+    return;
+  }
+  const rects = getMobileEndShareRectsScreen();
+  if(!rects){
+    hideMobileEndShareButtons();
+    return;
+  }
+  const applyRect = (el, r)=>{
+    el.style.display = "block";
+    el.style.left = r.x + "px";
+    el.style.top = r.y + "px";
+    el.style.width = r.w + "px";
+    el.style.height = r.h + "px";
+  };
+  applyRect(shareTapXBtn, rects.x);
+  applyRect(shareTapLINEBtn, rects.line);
+}
+shareTapXBtn?.addEventListener("click",(e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  shareToX();
+});
+shareTapLINEBtn?.addEventListener("click",(e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  shareToLINE();
+});
 
 
 // ⭐スマホ縦横フィット（見切れ防止）
@@ -501,6 +582,15 @@ let mobileMode = detectMobile();
 function isMobile(){
   return mobileMode;
 }
+const MOBILE_STAGE_WIDTH_RATIO = 0.98; // スマホだけ少し横幅を狭くする
+function getMobileStageRect(){
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const stageW = Math.round(vw * MOBILE_STAGE_WIDTH_RATIO);
+  const stageH = vh;
+  const left = Math.round((vw - stageW) / 2);
+  return { left, top: 0, width: stageW, height: stageH };
+}
 function useOverlayLayout(){
   // PCには絶対適用しない
   return isMobile();
@@ -515,10 +605,16 @@ function fitCanvas(){
   let baseW;
   let baseH;
 
-  // ⭐スマホは縦 / PCは横
+  // スマホ: UI画像サイズ優先 / PC: 現状維持
   if(isMobile()){
-    baseW = 720;
-    baseH = 1560;
+    const spUiImg = UI?.sound_sp?.ok ? UI.sound_sp.img : null;
+    if(spUiImg && spUiImg.naturalWidth && spUiImg.naturalHeight){
+      baseW = spUiImg.naturalWidth;
+      baseH = spUiImg.naturalHeight;
+    }else{
+      baseW = 960;  // fallback
+      baseH = 1400; // fallback
+    }
   }else{
     baseW = 960;
     baseH = 540;
@@ -528,31 +624,20 @@ function fitCanvas(){
   canvas.width  = baseW;
   canvas.height = baseH;
 
-  // 地面位置
-  groundY = canvas.height - (isMobile()?430:200);
+  // 地面位置: スマホは比率、PCは現状維持
+  groundY = isMobile() ? (canvas.height * 0.63) : (canvas.height - 200);
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
   if(isMobile()){
-    const frameScale = Math.min(vw/baseW, vh/baseH);
-    const frameW = baseW * frameScale;
-    const frameH = baseH * frameScale;
-    const frameLeft = (vw - frameW) / 2;
-    const frameTop = (vh - frameH) / 2;
-    mobileFrameRect = { left: frameLeft, top: frameTop, width: frameW, height: frameH };
-
-    // 外枠画像の内側表示領域
-    const padL = 0;
-    const padR = 0;
-    const padT = frameH * 0.08;
-    const padB = frameH * 0.12;
-
-    canvas.style.position = "fixed";
-    canvas.style.left = (frameLeft + padL) + "px";
-    canvas.style.top = (frameTop + padT) + "px";
-    canvas.style.width = (frameW - padL - padR) + "px";
-    canvas.style.height = (frameH - padT - padB) + "px";
+    const stageRect = getMobileStageRect();
+    mobileFrameRect = stageRect;
+    canvas.style.position = "absolute";
+    canvas.style.left = stageRect.left + "px";
+    canvas.style.top = stageRect.top + "px";
+    canvas.style.width = stageRect.width + "px";
+    canvas.style.height = stageRect.height + "px";
     canvas.style.margin = "0";
   }else{
     const scale = Math.min(vw/baseW, vh/baseH);
@@ -607,14 +692,29 @@ function syncTitleLayout(){
 
 function syncMobileLayerLayout(){
   if(!useOverlayLayout()) return;
-  mobileLayer.style.left = "42px";
-  mobileLayer.style.right = "42px";
-  mobileLayer.style.width = "calc(100% - 84px)";
-  mobileLayer.style.top = "308px";
-  titleVideo.style.left = "42px";
-  titleVideo.style.right = "42px";
-  titleVideo.style.width = "calc(100% - 84px)";
-  titleVideo.style.top = "308px";
+  const stageRect = getMobileStageRect();
+  const bgRect = { left: 0, top: stageRect.top, width: window.innerWidth, height: stageRect.height };
+  mobileLayer.style.left = bgRect.left + "px";
+  mobileLayer.style.right = "";
+  mobileLayer.style.width = bgRect.width + "px";
+  mobileLayer.style.top = bgRect.top + "px";
+  mobileLayer.style.height = bgRect.height + "px";
+  mobileLayer.style.objectFit = "cover";
+  mobileLayer.style.objectPosition = "center bottom";
+  titleVideo.style.left = stageRect.left + "px";
+  titleVideo.style.right = "";
+  titleVideo.style.width = stageRect.width + "px";
+  titleVideo.style.top = stageRect.top + "px";
+  titleVideo.style.height = stageRect.height + "px";
+  titleVideo.style.objectFit = "cover";
+  titleVideo.style.objectPosition = "center center";
+  titleBg.style.left = bgRect.left + "px";
+  titleBg.style.right = "";
+  titleBg.style.width = bgRect.width + "px";
+  titleBg.style.top = bgRect.top + "px";
+  titleBg.style.height = bgRect.height + "px";
+  titleBg.style.objectFit = "cover";
+  titleBg.style.objectPosition = "center bottom";
 }
 
 
@@ -804,6 +904,271 @@ function hitRect(rect, x, y){
     y < rect.y + rect.h
   );
 }
+
+function getSoundStartBtnRect(){
+  if(isMobile()){
+    const w = canvas.width * SOUND_BTN_LAYOUT_SP.width;
+    const h = canvas.height * SOUND_BTN_LAYOUT_SP.height;
+    return {
+      x: canvas.width * SOUND_BTN_LAYOUT_SP.left,
+      y: canvas.height * SOUND_BTN_LAYOUT_SP.top,
+      w,
+      h
+    };
+  }
+  // PCは既存の比率ボタン判定を使うため未使用（安全のため返す）
+  const w = canvas.width * 0.7;
+  const h = w * (290 / 906);
+  return {
+    x: canvas.width * 0.15,
+    y: canvas.height * 0.57,
+    w,
+    h
+  };
+}
+
+function getMobileFooterButtonRect(assetKey){
+  const left = canvas.width * 0.03;
+  const top = canvas.height * 0.82;
+  const w = canvas.width * 0.94;
+  const imgObj = I[assetKey];
+  let h;
+  if(imgObj?.ok && imgObj.img.naturalWidth && imgObj.img.naturalHeight){
+    h = w * (imgObj.img.naturalHeight / imgObj.img.naturalWidth) * 0.90;
+  }else{
+    h = canvas.height * 0.10;
+  }
+  return { x:left, y:top, w, h };
+}
+
+function drawMobileFooterButtonByState(stateKey){
+  if(!isMobile()) return null;
+  const assetKey = MOBILE_FOOTER_BTN_BY_STATE[stateKey];
+  if(!assetKey) return null;
+  const imgObj = I[assetKey];
+  const rect = getMobileFooterButtonRect(assetKey);
+  if(imgObj?.ok){
+    ctx.drawImage(imgObj.img, rect.x, rect.y, rect.w, rect.h);
+  }
+  return rect;
+}
+
+function getMobileFooterButtonHitAreas(stateKey){
+  if(!isMobile()) return null;
+  const assetKey = MOBILE_FOOTER_BTN_BY_STATE[stateKey];
+  if(!assetKey) return null;
+  const full = getMobileFooterButtonRect(assetKey);
+  const leftW = full.w * 0.17; // 左青ボタン / 家ボタンの想定幅
+  return {
+    full,
+    left: { x: full.x, y: full.y, w: leftW, h: full.h },
+    main: { x: full.x + leftW, y: full.y, w: full.w - leftW, h: full.h }
+  };
+}
+
+function getMobileSoundChoiceRects(){
+  // スマホSOUND画面の中央2ボタン（赤枠=音あり / 黒枠=音なし）に合わせた判定
+  // 画像全体に対する比率で管理（PCには影響しない）
+  return {
+    on: {
+      x: canvas.width * 0.06,
+      y: canvas.height * 0.29,
+      w: canvas.width * 0.88,
+      h: canvas.height * 0.12
+    },
+    off: {
+      x: canvas.width * 0.06,
+      y: canvas.height * 0.43,
+      w: canvas.width * 0.88,
+      h: canvas.height * 0.12
+    }
+  };
+}
+
+function getMobileCourseChoiceRects(){
+  return {
+    mm: {
+      // 画面中央〜少し上、中央線の左側
+      x: canvas.width * 0.06,
+      y: canvas.height * 0.28,
+      w: canvas.width * 0.41,
+      h: canvas.height * 0.26
+    },
+    ch: {
+      // 画面中央〜少し上、中央線の右側
+      x: canvas.width * 0.53,
+      y: canvas.height * 0.28,
+      w: canvas.width * 0.41,
+      h: canvas.height * 0.26
+    }
+  };
+}
+
+function getMobileEndShareRectsScreen(){
+  if(!isMobile()) return null;
+  const layerRect = mobileLayer?.getBoundingClientRect?.();
+  if(!layerRect || !layerRect.width || !layerRect.height) return null;
+  const srcW = mobileLayer.naturalWidth || canvas.width;
+  const srcH = mobileLayer.naturalHeight || canvas.height;
+  if(!srcW || !srcH) return null;
+
+  // mobileLayer は cover + center bottom で表示しているため、実表示中の画像領域を算出する
+  const scale = Math.max(layerRect.width / srcW, layerRect.height / srcH);
+  const drawW = srcW * scale;
+  const drawH = srcH * scale;
+  const imageRect = {
+    left: layerRect.left + (layerRect.width - drawW) / 2,
+    top: layerRect.top + (layerRect.height - drawH), // center bottom
+    width: drawW,
+    height: drawH
+  };
+
+  const panel = {
+    x: imageRect.width * 0.05,
+    y: imageRect.height * 0.28,
+    w: imageRect.width * 0.90,
+    h: imageRect.height * 0.52
+  };
+  const shareY = panel.y + panel.h * 0.70;
+  const scaleX = imageRect.width / canvas.width;
+  const scaleY = imageRect.height / canvas.height;
+  const btnSize = 70 * Math.min(scaleX, scaleY);
+  const gap = 24 * scaleX;
+  const center = imageRect.width / 2;
+  const hitPad = Math.max(10, btnSize * 0.20); // 少し広めに取る
+
+  return {
+    x: {
+      x: imageRect.left + center - gap/2 - btnSize - hitPad/2,
+      y: imageRect.top + shareY - btnSize/2 - hitPad/2,
+      w: btnSize + hitPad,
+      h: btnSize + hitPad
+    },
+    line: {
+      x: imageRect.left + center + gap/2 - hitPad/2,
+      y: imageRect.top + shareY - btnSize/2 - hitPad/2,
+      w: btnSize + hitPad,
+      h: btnSize + hitPad
+    }
+  };
+}
+
+function tryHandleMobileEndShareTap(e){
+  if(!isMobile() || state !== STATE.END) return false;
+  const rects = getMobileEndShareRectsScreen();
+  if(!rects) return false;
+  const px = e.clientX;
+  const py = e.clientY;
+  const now = performance.now();
+
+  if(now - (window.__lastShareTapAt || 0) < 450) return false;
+
+  if(hitRect(rects.x, px, py)){
+    window.__lastShareTapAt = now;
+    shareToX();
+    return true;
+  }
+  if(hitRect(rects.line, px, py)){
+    window.__lastShareTapAt = now;
+    shareToLINE();
+    return true;
+  }
+  return false;
+}
+
+function drawMobileCourseSelectionOverlay(){
+  if(!isMobile() || state !== STATE.COURSE) return;
+
+  const rects = getMobileCourseChoiceRects();
+  const selectedRect = mode === "mm" ? rects.mm : (mode === "ch" ? rects.ch : null);
+
+  ctx.save();
+
+  if(!selectedRect){
+    // 未選択時は下部ボタンを少し抑えて、先に上のカードを選ぶことを示す
+    const footer = getMobileFooterButtonHitAreas(STATE.COURSE);
+    if(footer){
+      // 透明余白を避けて、オレンジのボタン本体部分だけを薄く覆う
+      const dimRect = {
+        x: footer.main.x + footer.main.w * 0.05,
+        y: footer.main.y + footer.main.h * 0.05,
+        w: footer.main.w * 0.95,
+        h: footer.main.h * 0.72
+      };
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      if(ctx.roundRect){
+        ctx.beginPath();
+        ctx.roundRect(dimRect.x, dimRect.y, dimRect.w, dimRect.h, 24);
+        ctx.fill();
+      }else{
+        ctx.fillRect(dimRect.x, dimRect.y, dimRect.w, dimRect.h);
+      }
+    }
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(255,255,255,0.95)";
+    ctx.fillStyle = "rgba(40,70,120,0.95)";
+    ctx.font = "900 34px sans-serif";
+    const msgX = canvas.width * 0.5;
+    const msgY = canvas.height * 0.62;
+    ctx.strokeText("上のコースをえらんでね", msgX, msgY);
+    ctx.fillText("上のコースをえらんでね", msgX, msgY);
+    ctx.restore();
+    return;
+  }
+
+  // 選択中カードを強調表示
+  const outerPad = 12;
+  const innerPad = 2;
+  const isMmSelected = mode === "mm";
+  const outerLeftExtra = isMmSelected ? 14 : 0;
+  const outerRightExtra = isMmSelected ? 0 : 14;
+  const innerLeftExtra = isMmSelected ? 8 : 0;
+  const innerRightExtra = isMmSelected ? 0 : 8;
+  ctx.strokeStyle = "rgba(255,255,255,0.95)";
+  ctx.lineWidth = 12;
+  ctx.strokeRect(
+    selectedRect.x - outerPad - outerLeftExtra,
+    selectedRect.y - outerPad,
+    selectedRect.w + outerPad * 2 + outerLeftExtra + outerRightExtra,
+    selectedRect.h + outerPad * 2
+  );
+
+  ctx.strokeStyle = "rgba(255,215,0,0.95)";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(
+    selectedRect.x - innerPad - innerLeftExtra,
+    selectedRect.y - innerPad,
+    selectedRect.w + innerPad * 2 + innerLeftExtra + innerRightExtra,
+    selectedRect.h + innerPad * 2
+  );
+
+  // ラベル
+  const badgeW = selectedRect.w * 0.46;
+  const badgeH = selectedRect.h * 0.14;
+  const badgeX = selectedRect.x + selectedRect.w - badgeW - 12;
+  const badgeY = selectedRect.y + 12;
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  ctx.lineWidth = 3;
+  if(ctx.roundRect){
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 14);
+    ctx.fill();
+    ctx.stroke();
+  }else{
+    ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+    ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#0d56d8";
+  ctx.font = "900 24px sans-serif";
+  ctx.fillText("選択中", badgeX + badgeW/2, badgeY + badgeH/2 + 1);
+
+  ctx.restore();
+}
 // =============================
 // ⭐ ×ボタン → 音選択へ戻る
 // =============================
@@ -812,8 +1177,20 @@ closeBtn.addEventListener("click",()=>{
   running = false;
   stopBgm();
   feverLayer.classList.remove("show");
-
-  state = STATE.SOUND;
+  // 状態ごとに1つ前へ戻す（スマホ/PC共通）
+  if(state === STATE.GAME){
+    state = STATE.START;
+  }else if(state === STATE.START){
+    state = STATE.COURSE;
+  }else if(state === STATE.COURSE){
+    state = STATE.TITLE;
+  }else if(state === STATE.TITLE){
+    state = STATE.SOUND;
+  }else if(state === STATE.END){
+    state = STATE.TITLE;
+  }else{
+    state = STATE.SOUND;
+  }
 
   closeBtn.classList.remove("show");
 });
@@ -828,14 +1205,64 @@ if(titleStartBtn){
 
 canvas.addEventListener("pointerdown",(e)=>{
   unlockAudioOnce();
+  if(tryHandleMobileEndShareTap(e)) return;
   const { x, y } = getPointerXY(e); 
+
+  if(isMobile()){
+    const footerHit = getMobileFooterButtonHitAreas(state);
+    if(footerHit){
+      // TITLE: ゲームで遊ぶボタン（全体）→ 次画面へ
+      if(state === STATE.TITLE && hitRect(footerHit.full, x, y)){
+        state = STATE.COURSE;
+        return;
+      }
+      // SOUND: 閉じるボタン画像（現状は画面遷移させない）
+      if(state === STATE.SOUND && hitRect(footerHit.full, x, y)){
+        state = STATE.TITLE;
+        return;
+      }
+      // COURSE/START: 左青ボタンで1つ前へ戻る
+      if(state === STATE.COURSE && hitRect(footerHit.left, x, y)){
+        state = STATE.TITLE;
+        return;
+      }
+      // COURSE: 下部ボタンで次へ（選択済モードを確定）
+      if(state === STATE.COURSE && hitRect(footerHit.main, x, y)){
+        if(!mode) return;
+        state = STATE.START;
+        return;
+      }
+      if(state === STATE.START && hitRect(footerHit.left, x, y)){
+        state = STATE.COURSE;
+        return;
+      }
+      // START: 下部ボタンでゲーム開始
+      if(state === STATE.START && hitRect(footerHit.full, x, y)){
+        startBtnPressUntil = performance.now() + 120;
+        setTimeout(()=>{ startGame(); },120);
+        return;
+      }
+      // END: 左下の家ボタンでトップへ戻る
+      if(state === STATE.END && hitRect(footerHit.left, x, y)){
+        stopBgm();
+        state = STATE.TITLE;
+        return;
+      }
+      // END: もう一度遊ぶ（前前の画面 = START）へ戻る
+      if(state === STATE.END && hitRect(footerHit.main, x, y)){
+        stopBgm();
+        state = STATE.START;
+        return;
+      }
+    }
+  }
 
   // ==========================
 // ⭐ タイトル動画タップ（スマホだけ）
 // ==========================
 // ⭐ スマホタイトル → スタートボタン判定
 if(state === STATE.TITLE && isMobile()){
-  state = STATE.COURSE;
+  // タイトル画面は下部ボタンで進む（全体タップでは進まない）
   return;
 }
 
@@ -844,18 +1271,17 @@ if(state === STATE.TITLE && isMobile()){
   // ==========================
 // 🔊 音あり / 音なし選択
 // ==========================
-if (state === STATE.SOUND) {
+  if (state === STATE.SOUND) {
 
   if (isMobile()) {
-
-    if (hitBtn(BTN.sound_on_sp, x, y)) {
+    const soundChoice = getMobileSoundChoiceRects();
+    if (hitRect(soundChoice.on, x, y)) {
       soundOn = true;
       playBgm("bgm_common_intro.mp3");
       state = STATE.TITLE;
       return;
     }
-
-    if (hitBtn(BTN.sound_off_sp, x, y)) {
+    if (hitRect(soundChoice.off, x, y)) {
       soundOn = false;
       stopBgm();
       state = STATE.TITLE;
@@ -885,15 +1311,13 @@ if (state === STATE.SOUND) {
 if(state===STATE.COURSE){
 
   if(isMobile()){
-
-    // ⭐ 境界を下にずらす（0.55 = 画面中央より少し下）
-    const splitY = canvas.height * 0.55;
-
-    if(y < splitY){
-      mode = "mm";   // 上：ミラまる
-    }else{
-      mode = "ch";   // 下：チャーすけ
+    const courseRects = getMobileCourseChoiceRects();
+    if(hitRect(courseRects.mm, x, y)){
+      mode = "mm";
+    }else if(hitRect(courseRects.ch, x, y)){
+      mode = "ch";
     }
+    return;
 
   }else{
     // PCは今まで通り左右
@@ -910,6 +1334,10 @@ if(state===STATE.COURSE){
 
   // ③ スタート（画像UI：中央のボタン範囲）
   if(state===STATE.START){
+  if(isMobile()){
+    // スマホSTARTは下部btn_startでのみ開始
+    return;
+  }
 
   startBtnPressUntil = performance.now() + 120;
 
@@ -924,7 +1352,7 @@ if(state===STATE.COURSE){
   if(state===STATE.GAME){
 
   // ⭐ JUMPボタン押したかチェック
-  if(jumpBtnRect){
+  if(SHOW_JUMP_BUTTON_MOBILE && jumpBtnRect){
   if(
     x > jumpBtnRect.x &&
     x < jumpBtnRect.x + jumpBtnRect.w &&
@@ -936,8 +1364,8 @@ if(state===STATE.COURSE){
     return;
   }
 }
-  // PCは画面クリックでもジャンプ
-  if(!isMobile()){
+  // PCは画面クリック、スマホはボタン非表示時に画面タップでジャンプ
+  if(!isMobile() || !SHOW_JUMP_BUTTON_MOBILE){
     jump();
   }
   return;
@@ -946,28 +1374,64 @@ if(state===STATE.COURSE){
   // ⑤ 終了画面：もう一度 / やめる
 if(state===STATE.END){
 
-  if(hitRect(BTN.shareX, x, y)){
-  shareToX();
-  return;
-}
-
-if(hitRect(BTN.shareLINE, x, y)){
-  shareToLINE();
-  return;
-}
+  if(!isMobile()){
+    if(hitRect(BTN.shareX, x, y)){
+      shareToX();
+      return;
+    }
+    if(hitRect(BTN.shareLINE, x, y)){
+      shareToLINE();
+      return;
+    }
+  }
 
   if(isMobile()){
-
-    if(hitBtn(BTN.end_retry_sp,x,y)){
-      startGame();
-      return;
+    // 画像内のX/LINEアイコン用: 広めのフォールバック領域（スマホEND）
+    if(state === STATE.END){
+      const fallbackShareX = {
+        x: canvas.width * 0.28,
+        y: canvas.height * 0.67,
+        w: canvas.width * 0.18,
+        h: canvas.height * 0.14
+      };
+      const fallbackShareLINE = {
+        x: canvas.width * 0.50,
+        y: canvas.height * 0.67,
+        w: canvas.width * 0.20,
+        h: canvas.height * 0.14
+      };
+      if(hitRect(fallbackShareX, x, y)){
+        shareToX();
+        return;
+      }
+      if(hitRect(fallbackShareLINE, x, y)){
+        shareToLINE();
+        return;
+      }
     }
 
-    if(hitBtn(BTN.end_exit_sp,x,y)){
-      state = STATE.COURSE;
-      stopBgm();
+    const xRect = BTN.shareX ? {
+      x: BTN.shareX.x - 18,
+      y: BTN.shareX.y - 18,
+      w: BTN.shareX.w + 36,
+      h: BTN.shareX.h + 36
+    } : null;
+    const lineRect = BTN.shareLINE ? {
+      x: BTN.shareLINE.x - 18,
+      y: BTN.shareLINE.y - 18,
+      w: BTN.shareLINE.w + 36,
+      h: BTN.shareLINE.h + 36
+    } : null;
+    if(xRect && hitRect(xRect, x, y)){
+      shareToX();
       return;
     }
+    if(lineRect && hitRect(lineRect, x, y)){
+      shareToLINE();
+      return;
+    }
+    // スマホENDは下部ボタン（家 / もう一度遊ぶ）も使用
+    return;
 
   }else{
 
@@ -984,6 +1448,13 @@ if(hitRect(BTN.shareLINE, x, y)){
   }
 }
 
+});
+
+document.addEventListener("pointerdown",(e)=>{
+  // mobileLayer は pointer-events:none だが、共有だけはキャンバス外タップも拾えるよう保険をかける
+  if(tryHandleMobileEndShareTap(e)){
+    e.preventDefault();
+  }
 });
 
 document.addEventListener("keydown",(e)=>{
@@ -1012,6 +1483,7 @@ document.addEventListener("keydown",(e)=>{
 ========================================================= */
 const GAME_MS = 60_000;
 const gravity = isMobile() ? 1.2 : 1.0;
+const SHOW_JUMP_BUTTON_MOBILE = false;
 
 function getJumpPower(){
   return isMobile() ? -24 : -21;
@@ -1065,8 +1537,20 @@ let jumpBtnRect = null;
 let jumpBtnPressUntil = 0;
 let startBtnPressUntil = 0;
 let shieldUntilHit = false; // mm専用🍘
+let countdownStartAt = 0;
+const COUNTDOWN_MS = 4000;
 
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function getGameElapsedMs(){
+  return Math.max(0, Date.now() - startAt - COUNTDOWN_MS);
+}
+function getCountdownInfo(){
+  const dt = performance.now() - countdownStartAt;
+  if(dt < 0 || dt >= COUNTDOWN_MS) return null;
+  const idx = Math.floor(dt / 1000); // 0,1,2,3
+  const label = idx === 0 ? "3" : idx === 1 ? "2" : idx === 2 ? "1" : "GO!";
+  return { dt, idx, label };
+}
 
 /* 当たり判定（安定版） */
 function hit(a, b){
@@ -1460,6 +1944,7 @@ hp = 3;
   comment = { text:"", until:0 };
 
   shieldUntilHit = false;
+  countdownStartAt = 0;
 
   used = { fever:false, bigLightning:false, rare5:false };
   feverLayer.classList.remove("show");
@@ -1491,6 +1976,9 @@ function startGame(){
   }
   running = true;
   startAt = Date.now();
+  countdownStartAt = performance.now();
+  // se_countdown.mp3 が「3,2,1,GO」の一連音声なので開始時に1回だけ再生
+  playSE("countdown");
 }
 
 /* 終了 */
@@ -1513,7 +2001,7 @@ function finish(cleared){
   }
 }  
 function getShareText(){
-  return `⚡${score}GETした！
+  return `⚡${score}スコア達成！
 ミラまる＆チャーすけのEVエナジーラン⚡
 ▶ https://ev-plus.jp/lp/energy-run/
 #ミラまる #チャーすけ #EVエナジーラン`;
@@ -1522,28 +2010,32 @@ function getShareText(){
 // ⭐ シェア処理
 function shareToX(){
   const text = getShareText();
-  window.open(
-    "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text),
-    "_blank",
-    "noopener,noreferrer"
-  );
+  const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if(!win){
+    window.location.href = url;
+  }
 }
 
 function shareToLINE(){
   const text = getShareText();
-  window.open(
-    "https://line.me/R/msg/text/?" + encodeURIComponent(text),
-    "_blank",
-    "noopener,noreferrer"
-  );
+  const url = "https://line.me/R/msg/text/?" + encodeURIComponent(text);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if(!win){
+    window.location.href = url;
+  }
 }
 
 /* 更新 */
 function update(delta){
   const t = performance.now();
+  if((t - countdownStartAt) < COUNTDOWN_MS){
+    // カウント中はゲーム進行を止める（表示だけ行う）
+    return;
+  }
 
   bgScrollX -= 2 * delta;
-  if(bgScrollX <= -canvas.width){
+  if(!isMobile() && bgScrollX <= -canvas.width){
     bgScrollX = 0;
   }
 
@@ -1809,7 +2301,7 @@ if(lightnings.length > 25) lightnings.splice(0,5);
 if(items.length > 20) items.splice(0,5);
 if(enemies.length > 20) enemies.splice(0,5);
 
-  const remain = GAME_MS - (Date.now() - startAt);
+  const remain = GAME_MS - getGameElapsedMs();
 
 if(hp <= 0) finish(false);
 else if(remain <= 0) finish(true);
@@ -1937,16 +2429,118 @@ function talk(type){
   9) 描画（状態別）
 ========================================================= */
 function drawUI(){
+  if(isMobile()){
+    if(state===STATE.SOUND){
+      // SOUND下部ボタン（Canvas %配置）
+      const btn = drawMobileFooterButtonByState(STATE.SOUND) || getSoundStartBtnRect();
+      console.log("[btn_sound_sp] draw rect", {
+        canvasW: canvas.width,
+        canvasH: canvas.height,
+        x: Math.round(btn.x),
+        y: Math.round(btn.y),
+        w: Math.round(btn.w),
+        h: Math.round(btn.h)
+      });
+      BTN.sound_on_sp = {
+        x1: btn.x / canvas.width,
+        x2: (btn.x + btn.w) / canvas.width,
+        y1: btn.y / canvas.height,
+        y2: (btn.y + btn.h) / canvas.height
+      };
+      if(!I.btn_sound_on?.ok){
+        drawFallbackText("btn_sound_on.png が見つからない");
+      }
+      return;
+    }
+
+    if(state===STATE.END){
+      // スコアカウントアップ
+      if(displayScore < score){
+        displayScore += Math.ceil((score - displayScore) * 0.08);
+        if(score - displayScore < 1){
+          displayScore = score;
+        }
+      }
+
+      const text = "SCORE " + displayScore.toString().padStart(4,"0");
+      // 赤枠相当の領域（スマホEND）
+      const scoreBox = {
+        x: canvas.width * 0.12,
+        y: canvas.height * 0.41,
+        w: canvas.width * 0.76,
+        h: canvas.height * 0.11
+      };
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#5193ff";
+
+      // 枠いっぱいに収めるために文字サイズを自動調整
+      let fontSize = Math.floor(scoreBox.h * 0.78);
+      ctx.font = `900 ${fontSize}px sans-serif`;
+      while(ctx.measureText(text).width > scoreBox.w * 0.96 && fontSize > 24){
+        fontSize -= 2;
+        ctx.font = `900 ${fontSize}px sans-serif`;
+      }
+      ctx.lineWidth = Math.max(4, Math.floor(fontSize * 0.10));
+      const scoreX = scoreBox.x + scoreBox.w / 2 - (canvas.width * 0.02);
+      const scoreY = scoreBox.y + scoreBox.h / 2;
+      ctx.strokeText(text, scoreX, scoreY);
+      ctx.fillText(text, scoreX, scoreY);
+      ctx.restore();
+
+      // シェアボタン座標更新（タップ判定を維持）
+      const panel = {
+        x: canvas.width * 0.05,
+        y: canvas.height * 0.28,
+        w: canvas.width * 0.90,
+        h: canvas.height * 0.52
+      };
+      const shareY = panel.y + panel.h * 0.70;
+      const btnSize = 70;
+      const gap = 24;
+      const center = canvas.width / 2;
+      BTN.shareX = {
+        x: center - gap/2 - btnSize,
+        y: shareY - btnSize/2,
+        w: btnSize,
+        h: btnSize
+      };
+      BTN.shareLINE = {
+        x: center + gap/2,
+        y: shareY - btnSize/2,
+        w: btnSize,
+        h: btnSize
+      };
+      // スマホ終了画面のシェア枠（画像内のX / LINE）をタップ可能にする
+      drawMobileFooterButtonByState(STATE.END);
+      return;
+    }
+
+    ctx.fillStyle = "#bbdfff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    if(mobileUiFallbackMsg){
+      drawFallbackText(mobileUiFallbackMsg);
+    }
+    drawMobileFooterButtonByState(state);
+    return;
+  }
+
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
 
   if(state===STATE.SOUND){
 
     const img = isMobile()?UI.sound_sp:UI.sound;
 
     if(img?.ok){
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-    }else{
-      drawFallbackText("ui_sound_select.png が見つからない");
-    }
+  ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+}else{
+  drawFallbackText("ui_sound_select.png が見つからない");
+}
     return;
   }
 
@@ -1964,57 +2558,81 @@ function drawUI(){
 
   if(state===STATE.START){
 
-    const img = isMobile()?UI.start_sp:UI.start;
+  const img = isMobile()?UI.start_sp:UI.start;
 
-    if(img?.ok){
+  if(img?.ok){
 
-      const pressed = performance.now() < startBtnPressUntil;
+    // ⭐押した瞬間チェック
+    const pressed = performance.now() < startBtnPressUntil;
 
-      if(pressed){
-        ctx.save();
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.scale(0.96, 0.96);
-        ctx.translate(-canvas.width/2, -canvas.height/2);
-      }
-
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-
-      if(pressed) ctx.restore();
-
-    }else{
-      drawFallbackText("ui_start.png が見つからない");
+    // ⭐押した時だけ少し縮む
+    if(pressed){
+      ctx.save();
+      ctx.translate(canvas.width/2, canvas.height/2);
+      ctx.scale(0.96, 0.96);
+      ctx.translate(-canvas.width/2, -canvas.height/2);
     }
-    return;
+
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+
+    if(pressed) ctx.restore();
+
+  }else{
+    drawFallbackText("ui_start.png が見つからない");
   }
-
-  if(state===STATE.END){
-
-    if(displayScore < score){
-      displayScore += Math.ceil((score - displayScore) * 0.08);
-      if(score - displayScore < 1) displayScore = score;
-    }
-
-    const img = lastCleared
-      ? (isMobile()?UI.clear_sp:UI.clear)
-      : (isMobile()?UI.over_sp:UI.over);
-
-    if(img?.ok){
-      ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
-    }
-
-    ctx.save();
-    ctx.font = isMobile() ? "bold 36px sans-serif" : "bold 48px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#000";
-    ctx.strokeStyle = "#fff";
-
-    const text = "SCORE " + displayScore.toString().padStart(4,"0");
-    ctx.strokeText(text, canvas.width/2, canvas.height*0.52);
-    ctx.fillText(text, canvas.width/2, canvas.height*0.52);
-    ctx.restore();
-       return;
-  }
+  return;
 }
+
+if(state===STATE.END){
+
+  // ⭐ スコアカウントアップ
+  if(displayScore < score){
+    displayScore += Math.ceil((score - displayScore) * 0.08);
+
+    if(score - displayScore < 1){
+      displayScore = score;
+    }
+  }
+
+  const img = lastCleared
+    ? (isMobile()?UI.clear_sp:UI.clear)
+    : (isMobile()?UI.over_sp:UI.over);
+
+  if(img?.ok){
+    ctx.drawImage(img.img,0,0,canvas.width,canvas.height);
+  }
+
+  // ⭐ SCORE表示（白枠内に配置）
+  const panel = isMobile()
+    ? {
+        x: canvas.width * 0.05,
+        y: canvas.height * 0.28,
+        w: canvas.width * 0.90,
+        h: canvas.height * 0.52
+      }
+    : {
+        x: canvas.width * 0.27,
+        y: canvas.height * 0.47,
+        w: canvas.width * 0.46,
+        h: canvas.height * 0.30
+      };
+
+  ctx.save();
+ctx.font = isMobile() ? "900 44px sans-serif" : "900 56px sans-serif";
+ctx.textAlign = "center";
+ctx.lineWidth = isMobile() ? 6 : 7;
+ctx.fillStyle = "#fff";
+ctx.strokeStyle = "rgba(0,0,0,0.45)";
+
+const text = "SCORE " + displayScore.toString().padStart(4,"0");
+
+// 終了画面の真ん中より少し上
+const scoreY = panel.y + panel.h * 0.43;
+ctx.strokeText(text, canvas.width/2, scoreY);
+ctx.fillText(text, canvas.width/2, scoreY);
+
+ctx.restore();
+
 
 // =========================
 // ⭐ シェアボタン
@@ -2046,21 +2664,83 @@ return;
 }
   }
 
-function drawGame(){
-  // 背景
-const bg = (isMobile() && I.bg_sp2?.ok) ? I.bg_sp2 : ((isMobile() && I.bg_sp?.ok) ? I.bg_sp : I.bg);
+function drawScrollingTileX(img, y, w, h, scrollX, baseX=0){
+  if(!img || w <= 0 || h <= 0) return;
+  const tileW = Math.max(1, w);
+  let offset = scrollX % tileW;
+  if(offset > 0) offset -= tileW;
 
-if(bg && bg.ok){
-  ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
-  ctx.drawImage(bg.img, bgScrollX + canvas.width, 0, canvas.width, canvas.height);
-
-} else {
-
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let x = baseX + offset - tileW; x < canvas.width + tileW; x += tileW){
+    // サブピクセルで継ぎ目が見えやすいので、丸め＋1px重ねて描く
+    const dx = Math.round(x);
+    const dw = Math.ceil(w) + 1;
+    ctx.drawImage(img, dx, y, dw, h);
+  }
 }
 
+function drawGame(){
+  // 背景
+  if(isMobile()){
+    if(I.bg_sp?.ok){
+      // ベース背景（上下の空・地面側）は固定表示
+      ctx.drawImage(I.bg_sp.img, 0, 0, canvas.width, canvas.height);
+    }else{
+      ctx.fillStyle = "#bbdfff";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      drawFallbackText("background_sp.png が見つからない");
+    }
+
+    // background_sp2.png は background_sp.png と同じ「フル幅スケール比」を適用して中央寄せ
+    if(I.bg_sp?.ok && I.bg_sp2?.ok){
+      const baseImg = I.bg_sp.img;
+      const overlayImg = I.bg_sp2.img;
+      const baseW = baseImg.naturalWidth || canvas.width;
+      const baseScale = canvas.width / baseW; // background_sp.png をフル幅にした比率
+
+      const ow = (overlayImg.naturalWidth || canvas.width) * baseScale * 0.90;
+      // 下端位置はなるべく維持しつつ、上側を少し狭くする
+      const oh = (overlayImg.naturalHeight || canvas.height) * baseScale * 0.84;
+      const ox = (canvas.width - ow) / 2;
+      const prevTopRef = (canvas.height - ((overlayImg.naturalHeight || canvas.height) * baseScale * 0.78)) / 2 - (canvas.height * 0.04);
+      const baseOy = prevTopRef - (canvas.height * 0.01);
+      const cropTopOnly = canvas.height * 0.008; // 上だけほんの少し削る
+      const oy = baseOy + cropTopOnly;
+      const drawH = oh - cropTopOnly;
+      // 前景レイヤーは少し遅く流して、切り替わりを自然に見せる
+      drawScrollingTileX(overlayImg, oy, ow, drawH, bgScrollX * 0.72, ox);
+    }
+  }else{
+    const bg = I.bg;
+    if(bg && bg.ok){
+      ctx.drawImage(bg.img, bgScrollX, 0, canvas.width, canvas.height);
+      ctx.drawImage(bg.img, bgScrollX + canvas.width, 0, canvas.width, canvas.height);
+    }else{
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
   const t = performance.now();
+
+  // 3,2,1,GO カウント表示（色はスコアと同系）
+  const countdown = getCountdownInfo();
+  if(countdown){
+    const alpha = countdown.label === "GO!" ? 0.95 : 0.9;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const fontSize = isMobile() ? (countdown.label === "GO!" ? 126 : 138) : (countdown.label === "GO!" ? 108 : 122);
+    ctx.font = `900 ${fontSize}px sans-serif`;
+    ctx.lineWidth = Math.max(8, Math.floor(fontSize * 0.10));
+    ctx.strokeStyle = "#5193ff";
+    ctx.fillStyle = "#fff";
+    const cx = canvas.width / 2;
+    const cy = canvas.height * (isMobile() ? 0.42 : 0.36);
+    ctx.strokeText(countdown.label, cx, cy);
+    ctx.fillText(countdown.label, cx, cy);
+    ctx.restore();
+  }
 
   // 先読み（chのみ）
 if(mode==="ch" && t < mapRevealUntil){
@@ -2228,35 +2908,40 @@ if(t < comment.until && comment.text){
 
   let boxY;
   let textY;
+  const telopH = isMobile() ? 48 : 44;
 
   // ⭐ スマホ → ジャンプボタンの上に表示
   if(isMobile() && jumpBtnRect){
 
-    boxY = jumpBtnRect.y - 40; // ← ボタンとの距離（調整OK）
-    textY = boxY + 25;
+    boxY = jumpBtnRect.y - telopH; // ← ボタンとの距離（調整OK）
+    textY = boxY + (telopH / 2);
 
   }else{
     // ⭐ PC → 今までと同じ位置
     boxY = 120;
-    textY = 145;
+    textY = boxY + (telopH / 2);
   }
 
   // 背景バー
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(0, boxY, canvas.width, 40);
+  ctx.fillRect(0, boxY, canvas.width, telopH);
 
   // テキスト
+  ctx.textBaseline = "middle";
+  ctx.strokeStyle = "rgba(0,0,0,0.75)";
+  ctx.lineWidth = isMobile() ? 4 : 3;
   ctx.fillStyle = "#fff";
-  ctx.font = "bold 16px sans-serif";
+  ctx.font = isMobile() ? "900 19px sans-serif" : "900 18px sans-serif";
   ctx.textAlign = "center";
+  ctx.strokeText(comment.text, canvas.width/2, textY);
   ctx.fillText(comment.text, canvas.width/2, textY);
 
   ctx.restore();
 }
 
   // ⭐⭐⭐ JUMPボタン（PC＋スマホ）
-if(I.ui_jump && I.ui_jump.ok){
+if((!isMobile() && I.ui_jump && I.ui_jump.ok) || (isMobile() && I.btn_jump_footer?.ok)){
 
 
 // ⭐ キャラ基準の地面
@@ -2276,48 +2961,76 @@ const offsetY = isMobile() ? 60 : 40;
 // ⭐ Y座標（最後に計算）
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
 
-ctx.globalAlpha = 0.95;
-const pressing = performance.now() < jumpBtnPressUntil;
-const scale = pressing ? 0.92 : 1; // ←押したら小さく
+if(isMobile()){
+  const mobileJumpRect = drawMobileFooterButtonByState(STATE.GAME);
+  if(mobileJumpRect){
+    jumpBtnRect = mobileJumpRect;
+  }else{
+    jumpBtnRect = null;
+  }
+}else if(!isMobile() || SHOW_JUMP_BUTTON_MOBILE){
+  ctx.globalAlpha = 0.95;
+  const pressing = performance.now() < jumpBtnPressUntil;
+  const scale = pressing ? 0.92 : 1; // ←押したら小さく
 
-ctx.save();
+  ctx.save();
 
-ctx.translate(btnX + btnW/2, btnY + btnH/2);
-ctx.scale(scale, scale);
-ctx.translate(-btnW/2, -btnH/2);
+  ctx.translate(btnX + btnW/2, btnY + btnH/2);
+  ctx.scale(scale, scale);
+  ctx.translate(-btnW/2, -btnH/2);
 
-ctx.drawImage(I.ui_jump.img, 0, 0, btnW, btnH);
+  ctx.drawImage(I.ui_jump.img, 0, 0, btnW, btnH);
 
-ctx.restore();
-
-ctx.globalAlpha = 1;
-
-jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  jumpBtnRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+}else{
+  jumpBtnRect = null;
+}
 
 // =======================
 // ⭐ 右上UI（タイム＋スコア）
 // =======================
 ctx.save();
-
 ctx.textAlign = "right";
 ctx.textBaseline = "top";
-
-ctx.font = isMobile() ? "bold 30px system-ui" : "bold 42px system-ui";
 ctx.fillStyle = "#fff";
 ctx.strokeStyle = "rgba(0,0,0,0.4)";
-ctx.lineWidth = 6;
 
-const remainMs = GAME_MS - (Date.now() - startAt);
+const remainMs = GAME_MS - getGameElapsedMs();
 const sec = Math.ceil(Math.max(0, remainMs / 1000));
 
-ctx.strokeText(`TIME ${sec}`, canvas.width - 20, 20);
-ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
+if(isMobile()){
+  // 左上赤枠あたりにバッテリー
+  const batteryX = canvas.width * 0.03;
+  const batteryY = canvas.height * 0.145;
+  drawBattery(batteryX, batteryY, hp);
 
-ctx.font = isMobile() ? "bold 22px system-ui" : "bold 28px system-ui";
-ctx.strokeText(`SCORE ${score}`, canvas.width - 20, 70);
-ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
+  // 右上赤枠あたりに TIME / SCORE
+  const hudRightX = canvas.width * 0.965;
+  const timeY = canvas.height * 0.145;
+  const scoreY = canvas.height * 0.178;
+
+  ctx.lineWidth = 7;
+  ctx.font = "bold 46px system-ui";
+  ctx.strokeText(`TIME ${sec}`, hudRightX, timeY);
+  ctx.fillText(`TIME ${sec}`, hudRightX, timeY);
+
+  ctx.font = "bold 34px system-ui";
+  ctx.strokeText(`SCORE ${score}`, hudRightX, scoreY);
+  ctx.fillText(`SCORE ${score}`, hudRightX, scoreY);
+}else{
+  ctx.lineWidth = 6;
+  ctx.font = "bold 42px system-ui";
+  ctx.strokeText(`TIME ${sec}`, canvas.width - 20, 20);
+  ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
+
+  ctx.font = "bold 28px system-ui";
+  ctx.strokeText(`SCORE ${score}`, canvas.width - 20, 70);
+  ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
+  drawBattery(20, 20, hp);
+}
 ctx.restore();
-drawBattery(20, 20, hp);
 
 }
 }
@@ -2471,6 +3184,7 @@ function roundRect(ctx, x, y, w, h, r){
 let lastTime = 0;
 let titleVisible = false;
 let frameOnlyVisible = false;
+let mobileGameLayoutApplied = false;
 
 function applyMobileBodyBg(stateKey){
   void stateKey;
@@ -2482,46 +3196,55 @@ function syncMobileOverlayByState(stateKey){
   if(!isMobile()){
     mobileLayer.style.display = "none";
     titleVideo.style.display = "none";
+    titleBg.style.display = "none";
     return;
   }
 
   applyMobileBodyBg(stateKey);
   syncMobileLayerLayout();
+  mobileLayer.style.zIndex = "140";
 
   mobileLayer.style.display = "none";
   titleVideo.style.display = "none";
+  titleBg.style.display = (stateKey === STATE.SOUND) ? "block" : "none";
 
   if(stateKey === STATE.SOUND){
+    // SOUNDは ui_sound_sp.png を背景レイヤーに表示 + Canvas上ボタン
+    titleBg.style.display = "none";
     mobileLayer.onerror = ()=>{
-      mobileUiFallbackMsg = "ui_sound_sp2.png が見つからない";
+      mobileUiFallbackMsg = "ui_sound_sp.png が見つからない";
     };
     mobileLayer.onload = ()=>{
       mobileUiFallbackMsg = "";
     };
-    mobileLayer.src = "ui_sound_sp2.png";
+    mobileLayer.src = "ui_sound_sp.png";
+    mobileLayer.style.zIndex = "90";
     mobileLayer.style.display = "block";
     return;
   }
 
   if(stateKey === STATE.TITLE){
-    if(titleVideo.dataset.uiSrc !== "ui_start_sp.mp4"){
-      titleVideo.src = "ui_start_sp.mp4";
-      titleVideo.dataset.uiSrc = "ui_start_sp.mp4";
-      titleVideo.load();
-    }
-    titleVideo.style.display = "block";
-    titleVideo.play().catch(()=>{});
+    mobileLayer.onerror = ()=>{
+      mobileUiFallbackMsg = "ui_start_sp.png が見つからない";
+    };
+    mobileLayer.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    mobileLayer.src = "ui_start_sp.png";
+    mobileLayer.style.zIndex = "90";
+    mobileLayer.style.display = "block";
     return;
   }
 
   if(stateKey === STATE.COURSE){
     mobileLayer.onerror = ()=>{
-      mobileUiFallbackMsg = "ui_course_sp2.png が見つからない";
+      mobileUiFallbackMsg = "ui_course_sp.png が見つからない";
     };
     mobileLayer.onload = ()=>{
       mobileUiFallbackMsg = "";
     };
-    mobileLayer.src = "ui_course_sp2.png";
+    mobileLayer.src = "ui_course_sp.png";
+    mobileLayer.style.zIndex = "90";
     mobileLayer.style.display = "block";
     return;
   }
@@ -2534,25 +3257,29 @@ function syncMobileOverlayByState(stateKey){
       mobileUiFallbackMsg = "";
     };
     mobileLayer.src = (mode === "ch") ? "ui_start_ch_sp.png" : "ui_start_mm_sp.png";
+    mobileLayer.style.zIndex = "90";
     mobileLayer.style.display = "block";
     return;
   }
 
   if(stateKey === STATE.END){
     mobileLayer.onerror = ()=>{
-      mobileUiFallbackMsg = "ui_score_sp2.png が見つからない";
+      mobileUiFallbackMsg = "ui_score_sp.png が見つからない";
     };
     mobileLayer.onload = ()=>{
       mobileUiFallbackMsg = "";
     };
-    mobileLayer.src = "ui_score_sp2.png";
+    mobileLayer.src = "ui_score_sp.png";
+    mobileLayer.style.zIndex = "90";
     mobileLayer.style.display = "block";
     return;
   }
 
   if(stateKey === STATE.GAME){
-    mobileLayer.src = "background_sp2.png";
+    // GAME背景はCanvas側で background_sp2.png を繰り返し表示する
     mobileLayer.style.display = "none";
+    mobileUiFallbackMsg = "";
+    return;
   }
 }
 
@@ -2569,18 +3296,36 @@ function setMobileFrameVisible(visible, stateKey){
   syncMobileOverlayByState(stateKey);
 }
 
+function syncMobileGameCanvasLayout(){
+  if(!isMobile()) return;
+  if(state === STATE.GAME){
+    const stageRect = getMobileStageRect();
+    canvas.style.left = stageRect.left + "px";
+    canvas.style.top = stageRect.top + "px";
+    canvas.style.width = stageRect.width + "px";
+    canvas.style.height = stageRect.height + "px";
+    mobileGameLayoutApplied = true;
+  }else if(mobileGameLayoutApplied){
+    mobileGameLayoutApplied = false;
+    fitCanvas();
+  }
+}
+
 /* =========================================================
   10) 描画ループ（常時）
 ========================================================= */
 function drawFrame(time){
 if(isMobile()){
   syncMobileOverlayByState(state);
+  syncMobileGameCanvasLayout();
+  syncMobileEndShareButtons();
 }else{
   mobileLayer.style.display = "none";
   titleVideo.style.display = "none";
+  hideMobileEndShareButtons();
 }
-// ⭐ ゲーム中だけ×表示
-if(state === STATE.GAME){
+// ⭐ SOUND以外は×表示
+if(state !== STATE.SOUND){
   closeBtn.classList.add("show");
 }else{
   closeBtn.classList.remove("show");
@@ -2592,7 +3337,25 @@ const delta = (time - lastTime) / 16.67;
 lastTime = time;
 
   if(state===STATE.TITLE || state===STATE.SOUND || state===STATE.COURSE || state===STATE.START || state===STATE.END){
-    drawUI();
+    if(isMobile()){
+      // スマホSOUND/ENDはCanvasに重ね描画
+      if(state===STATE.SOUND || state===STATE.END){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawUI();
+      }else{
+        // それ以外はHTMLオーバーレイでUIを見せる
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if(mobileUiFallbackMsg){
+          drawFallbackText(mobileUiFallbackMsg);
+        }
+        drawMobileFooterButtonByState(state);
+        if(state===STATE.COURSE){
+          drawMobileCourseSelectionOverlay();
+        }
+      }
+    }else{
+      drawUI();
+    }
     requestAnimationFrame(drawFrame);
     return;
   }
@@ -2629,6 +3392,9 @@ async function boot(){
   mobileLayer.style.display = "none";
   titleVideo.style.display = "none";
   titleStartBtn.style.display = "none";
+
+  // UI画像ロード後に再フィット（naturalWidth/Heightを反映）
+  fitCanvas();
 
   loadingEl.style.display = "none";
 requestAnimationFrame(drawFrame);
