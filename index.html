@@ -1976,6 +1976,18 @@ function hit(a, b){
   );
 }
 
+// 敵だけはスマホ時の見た目拡大分を少し相殺して、理不尽な接触を減らす
+function hitEnemy(a, b){
+  const marginA = isMobile() ? 20 : 14;
+  const marginB = isMobile() ? 18 : 10;
+  return (
+    a.x + marginA < b.x + b.w - marginB &&
+    a.x + a.w - marginA > b.x + marginB &&
+    a.y + marginA < b.y + b.h - marginB &&
+    a.y + a.h - marginA > b.y + marginB
+  );
+}
+
 function updateHUD(remainMs){}
 
 function flashDamage(){
@@ -2662,7 +2674,7 @@ if(combo >= 3){
 
   // 敵衝突
   enemies = enemies.filter(en=>{
-    if(hit(player, en)){
+    if(hitEnemy(player, en)){
       // フィーバー中は敵が出ない設計だが念のため
       if(t < feverUntil) return false;
 
