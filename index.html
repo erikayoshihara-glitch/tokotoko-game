@@ -1978,8 +1978,8 @@ function hit(a, b){
 
 // 敵だけはスマホ時の見た目拡大分を少し相殺して、理不尽な接触を減らす
 function hitEnemy(a, b){
-  const marginA = isMobile() ? 20 : 14;
-  const marginB = isMobile() ? 18 : 10;
+  const marginA = isMobile() ? 24 : 14;
+  const marginB = isMobile() ? 22 : 10;
   return (
     a.x + marginA < b.x + b.w - marginB &&
     a.x + a.w - marginA > b.x + marginB &&
@@ -2127,7 +2127,7 @@ function makeEnemyByRule(){
   else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
   else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
 
-  const h = spSpriteSize(70);
+  const h = 70;
   const device = isMobile() ? "sp" : "pc";
   const yOffset = ENEMY_Y_OFFSET[kind]?.[device] ?? 50;
 
@@ -2136,7 +2136,7 @@ function makeEnemyByRule(){
     kind,
     x: canvas.width,
     y: groundY - h + yOffset, // ⭐ 地面より下に沈める
-    w: spSpriteSize(70),
+    w: 70,
     h: h,
     rot: 0
   };
