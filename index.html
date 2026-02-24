@@ -3219,11 +3219,12 @@ if(mode==="ch" && t < mapRevealUntil){
   if(isMobile()){
     const footerMaskY = canvas.height * 0.815;
     let clipBottom = footerMaskY;
+    const telopOverlap = 12; // 境界のサブピクセル隙間対策
     const mobileGameBtnKey = MOBILE_FOOTER_BTN_BY_STATE[STATE.GAME];
     if(mobileGameBtnKey){
       const gameBtnRect = getMobileFooterButtonRect(mobileGameBtnKey);
       if(t < comment.until && comment.text){
-        clipBottom = Math.min(clipBottom, gameBtnRect.y - 56);
+        clipBottom = Math.min(clipBottom, gameBtnRect.y - 56 - telopOverlap);
       }
     }
     ctx.beginPath();
@@ -3381,6 +3382,7 @@ if(t < comment.until && comment.text){
   let boxY;
   let textY;
   const telopH = isMobile() ? 56 : 44;
+  const telopOverlap = isMobile() ? 12 : 0;
 
   // ⭐ スマホ → ジャンプボタンの上に表示
   if(isMobile() && jumpBtnRect){
@@ -3397,7 +3399,7 @@ if(t < comment.until && comment.text){
   // 背景バー
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(0, boxY, canvas.width, telopH);
+  ctx.fillRect(0, boxY - telopOverlap, canvas.width, telopH + (telopOverlap * 2));
 
   // テキスト
   ctx.textBaseline = "middle";
@@ -3418,7 +3420,7 @@ if(t < comment.until && comment.text){
 if(isMobile()){
   const footerMaskY = canvas.height * 0.815;
   ctx.save();
-  ctx.fillStyle = "#4f88e8";
+  ctx.fillStyle = "#5193ff";
   ctx.fillRect(0, footerMaskY, canvas.width, canvas.height - footerMaskY);
   // 背景下部のコピー文字は上書きで復元
   ctx.fillStyle = "#00167a";
