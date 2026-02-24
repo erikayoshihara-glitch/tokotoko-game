@@ -894,6 +894,20 @@ function inFeverNow(){
 }
 
 const sePool = {};
+const activeSeList = new Set();
+
+function stopAllSE(){
+  activeSeList.forEach((a)=>{
+    try{
+      a.pause();
+      a.currentTime = 0;
+      a.src = "";
+      a.removeAttribute("src");
+      a.load();
+    }catch(e){}
+  });
+  activeSeList.clear();
+}
 
 function playSE(key){
   if(!soundOn) return;
@@ -917,6 +931,12 @@ a.volume = 0.85;
   if(inFeverNow()){
     a.playbackRate = 1.25;
   }
+
+  activeSeList.add(a);
+  a.addEventListener("ended", ()=>activeSeList.delete(a), { once:true });
+  a.addEventListener("pause", ()=>{
+    if(a.ended || a.currentTime === 0) activeSeList.delete(a);
+  });
 
   const p = a.play();
   if(p && p.catch) p.catch(()=>{});
@@ -1490,6 +1510,7 @@ closeBtn.addEventListener("click",()=>{
 
   running = false;
   stopBgm();
+  stopAllSE();
   feverLayer.classList.remove("show");
   // スマホ/PC共通: 右上×は常にトップ（音あり/音なし選択画面）へ戻る
   state = STATE.SOUND;
@@ -1986,7 +2007,7 @@ function startFever(){
 
   const t = performance.now();
 
-  feverUntil = t + 5200;
+  feverUntil = t + 15200; // フィーバーBGM/演出をさらに約5秒延長（合計約15秒）
   feverLayer.classList.add("show");
 
   // ⭐ここで stopBgm しない
@@ -3400,10 +3421,13 @@ if(t < comment.until && comment.text){
     textY = boxY + (telopH / 2);
   }
 
+  const barY = boxY - telopOverlap;
+  const barH = telopH + (telopOverlap * 2);
+
   // 背景バー
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(0, boxY - telopOverlap, canvas.width, telopH + (telopOverlap * 2));
+  ctx.fillRect(0, barY, canvas.width, barH);
 
   // テキスト
   ctx.textBaseline = "middle";
