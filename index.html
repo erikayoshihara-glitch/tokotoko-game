@@ -2034,6 +2034,7 @@ function startFever(){
   }
 
   feverBgm = new Audio("bgm_fever.mp3");
+  const currentFeverBgm = feverBgm;
   feverBgm.loop = true;
   feverBgm.volume = 0.7;
 
@@ -2041,30 +2042,50 @@ function startFever(){
   feverBgm.setAttribute("playsinline","");
   feverBgm.setAttribute("webkit-playsinline","");
 
+  // iOSなどで loop が不安定な場合に保険で再生継続
+  feverBgm.addEventListener("ended", ()=>{
+    if(feverBgm !== currentFeverBgm) return;
+    if(performance.now() < feverUntil){
+      try{
+        feverBgm.currentTime = 0;
+        const p = feverBgm.play();
+        if(p && p.catch){
+          p.catch(()=>{
+            feverUntil = performance.now();
+          });
+        }
+        return;
+      }catch(e){
+        feverUntil = performance.now();
+      }
+    }
+  });
+
   feverBgm.play().catch(()=>{});
 }
   say("🌈 フィーバー突入！",1100);
 }
 
-function endFeverIfNeeded(){
+function endFeverNow(){
+  feverLayer.classList.remove("show");
 
-  if(!feverBgm) return;
-  const t = performance.now();
-
-  if(t >= feverUntil){
-    feverLayer.classList.remove("show");
-
-    if(feverBgm){
+  if(feverBgm){
+    try{
       feverBgm.pause();
       feverBgm.currentTime = 0;
-      feverBgm = null;
-    }
-
-    // ⭐通常BGMを再開
-if(bgm){
-  try{ bgm.play(); }catch(e){}
-}
+    }catch(e){}
+    feverBgm = null;
   }
+
+  // 通常BGMを再開（ゲーム中のみ）
+  if(running && bgm){
+    try{ bgm.play(); }catch(e){}
+  }
+}
+
+function endFeverIfNeeded(){
+  const t = performance.now();
+  if(t >= feverUntil) endFeverNow();
 }
 
 /* スポーン */
