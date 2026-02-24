@@ -3994,8 +3994,8 @@ function drawShareBtn(rect,label){
 // =======================
 function drawBattery(x,y,hp){
 
-  const size = 48;   // 電池サイズ
-  const gap = 8;     // 間隔
+  const size = isMobile() ? 58 : 48;   // 電池サイズ（スマホだけ一回り大きく）
+  const gap = isMobile() ? 10 : 8;     // 間隔
   const maxHp = 3;
 
   ctx.save();
