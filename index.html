@@ -630,6 +630,10 @@ let mobileMode = detectMobile();
 function isMobile(){
   return mobileMode;
 }
+const MOBILE_SPRITE_SCALE = 1.08; // スマホのキャラ/アイコンを少しだけ大きく
+function spSpriteSize(size){
+  return isMobile() ? Math.round(size * MOBILE_SPRITE_SCALE) : size;
+}
 const MOBILE_STAGE_WIDTH_RATIO = 0.98; // スマホだけ少し横幅を狭くする
 function getMobileStageRect(){
   const vw = window.innerWidth;
@@ -2041,8 +2045,8 @@ function makeLightning(){
       kind:"lightning",
       x: canvas.width,
       y: groundY + 20,
-      w:50,
-      h:50
+      w:spSpriteSize(50),
+      h:spSpriteSize(50)
     };
   }
 
@@ -2051,8 +2055,8 @@ function makeLightning(){
     kind:"lightning",
     x: canvas.width,
     y: groundY - 60 - Math.random()*maxHeight,
-    w:50,
-    h:50
+    w:spSpriteSize(50),
+    h:spSpriteSize(50)
   };
 }
 
@@ -2071,8 +2075,8 @@ let Y_RAND = isMobile() ? 180 : 60;
   if(key === "ch_repair" || key === "mm_onigiri") y = groundY - (isMobile()?80:40);
 
     // ⭐ スマホだけ少し大きく
-const itemSize = isMobile() ? 66 : 56;
-const bigSize  = isMobile() ? 74 : 64;
+const itemSize = isMobile() ? spSpriteSize(66) : 56;
+const bigSize  = isMobile() ? spSpriteSize(74) : 64;
 
 return {
   type:"item",
@@ -2090,7 +2094,7 @@ function makeEnemyByRule(){
   else if(spawnCount % 2 === 0 && Math.random() < 0.45) kind = "traffic";
   else kind = (Math.random() < 0.52) ? "pitfall" : "construction";
 
-  const h = 70;
+  const h = spSpriteSize(70);
   const device = isMobile() ? "sp" : "pc";
   const yOffset = ENEMY_Y_OFFSET[kind]?.[device] ?? 50;
 
@@ -2099,7 +2103,7 @@ function makeEnemyByRule(){
     kind,
     x: canvas.width,
     y: groundY - h + yOffset, // ⭐ 地面より下に沈める
-    w: 70,
+    w: spSpriteSize(70),
     h: h,
     rot: 0
   };
@@ -2118,8 +2122,8 @@ function trySpawnPlannedEvent(){
       key:"event_fever",
       x: canvas.width,
       y: groundY - 120,
-      w: 64,
-      h: 64
+      w: spSpriteSize(64),
+      h: spSpriteSize(64)
     });
     used.fever = true;
     say("🌈 何か特別なものが…？",1000);
@@ -2171,7 +2175,7 @@ function spawnLightningPattern(){
         kind:"lightning",
         x: baseX + i*80,
         y: groundY + 20,
-        w:50,h:50
+        w:spSpriteSize(50),h:spSpriteSize(50)
       });
     }
     return;
@@ -2189,7 +2193,7 @@ const y = groundY - 60 - Math.random()*maxHeight;
         kind:"lightning",
         x: baseX,
         y: y - i * (isMobile() ? 80 : 40),
-        w:50,h:50
+        w:spSpriteSize(50),h:spSpriteSize(50)
       });
     }
     return;
@@ -2207,7 +2211,7 @@ const startY = groundY - 60 - Math.random()*maxHeight;
         kind:"lightning",
         x: baseX + i*70,
         y: startY - i*40,
-        w:50,h:50
+        w:spSpriteSize(50),h:spSpriteSize(50)
       });
     }
     return;
@@ -2282,7 +2286,7 @@ function resetGameCore(){
   running = false;
   startAt = 0;
 
-  const baseW = isMobile() ? 100 : 90;
+  const baseW = isMobile() ? spSpriteSize(100) : 90;
 
 // ⭐ 元画像の比率取得
 const img = I[MODE[mode].playerKey]?.img;
