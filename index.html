@@ -29,6 +29,34 @@ justify-content:center;
 font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
 }
 
+canvas,
+button,
+img,
+a{
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+button,
+a{
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button:focus,
+button:focus-visible,
+a:focus,
+a:focus-visible{
+  outline: none;
+}
+
+img{
+  -webkit-user-drag: none;
+}
+
 canvas{
 display:block;
 margin:0;
@@ -3186,6 +3214,23 @@ if(mode==="ch" && t < mapRevealUntil){
   ctx.restore();
 }
 
+  // モバイルではゲーム本体の描画を下部UI/テロップ領域まで出さない
+  ctx.save();
+  if(isMobile()){
+    const footerMaskY = canvas.height * 0.815;
+    let clipBottom = footerMaskY;
+    const mobileGameBtnKey = MOBILE_FOOTER_BTN_BY_STATE[STATE.GAME];
+    if(mobileGameBtnKey){
+      const gameBtnRect = getMobileFooterButtonRect(mobileGameBtnKey);
+      if(t < comment.until && comment.text){
+        clipBottom = Math.min(clipBottom, gameBtnRect.y - 56);
+      }
+    }
+    ctx.beginPath();
+    ctx.rect(0, 0, canvas.width, Math.max(0, clipBottom));
+    ctx.clip();
+  }
+
   // ⚡
   lightnings.forEach(l=>{
     if(I.lightning?.ok) ctx.drawImage(I.lightning.img, l.x, l.y, l.w, l.h);
@@ -3308,6 +3353,8 @@ popups.forEach(p=>{
 
   ctx.restore();
 });
+
+ctx.restore();
 
 if(t < comboTextUntil && comboText){
   ctx.save();
