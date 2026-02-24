@@ -986,8 +986,8 @@ function hitRect(rect, x, y){
 
 function triggerCanvasPressFx(rect){
   if(!rect) return;
-  if(!isMobile()) return; // PCの枠っぽい押下演出を無効
-  if(isMobile()) return; // スマホの白オーバーレイ押下演出は無効
+  // 現在はPC/スマホともに押下オーバーレイ演出を使わない
+  return;
   canvasPressFx = {
     x: rect.x,
     y: rect.y,
@@ -999,14 +999,9 @@ function triggerCanvasPressFx(rect){
 
 function drawCanvasPressFx(){
   if(!canvasPressFx) return;
-  if(!isMobile()){
-    canvasPressFx = null;
-    return;
-  }
-  if(isMobile()){
-    canvasPressFx = null;
-    return;
-  }
+  // 現在は未使用（保険で残骸を消す）
+  canvasPressFx = null;
+  return;
   const remain = canvasPressFx.until - performance.now();
   if(remain <= 0){
     canvasPressFx = null;
@@ -2085,6 +2080,8 @@ function endFeverNow(){
 
 function endFeverIfNeeded(){
   const t = performance.now();
+  if(feverUntil <= 0) return;
+  if(!feverBgm && t < feverUntil) return;
   if(t >= feverUntil) endFeverNow();
 }
 
@@ -2289,10 +2286,14 @@ function spawn(){
   spawnCount++;
 
   // まず「このゲームの予定」を出す
-  if(trySpawnPlannedEvent()) return;
+  if(trySpawnPlannedEvent()){
+    enemySpawnStreak = 0;
+    return;
+  }
 
   // フィーバー中：敵なし＆⚡大量
   if(inFever){
+    enemySpawnStreak = 0;
     lightnings.push(makeLightning());
     if(Math.random() < 0.35) lightnings.push(makeLightning());
     return;
