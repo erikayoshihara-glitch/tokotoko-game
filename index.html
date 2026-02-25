@@ -263,6 +263,15 @@ height:auto;
   display:none;
 }
 
+.game-jump-btn{
+  position:absolute;
+  display:none;
+  pointer-events:auto;
+  user-select:none;
+  -webkit-user-drag:none;
+  z-index:111;
+}
+
 </style>
 </head>
 
@@ -282,6 +291,7 @@ decoding="async"
 style="
 pointer-events:none;
 ">
+<div id="titleBgLoop" style="pointer-events:none; display:none;"></div>
 
 
 <!-- ⭐ スマホタイトル動画 -->
@@ -311,6 +321,11 @@ max-width:420px;
 z-index:110;
 display:none;
 ">
+
+<img id="gameJumpBtn"
+class="game-jump-btn"
+src="btn_jump.png"
+alt="ジャンプ">
 
 
 
@@ -559,8 +574,10 @@ const SE_SRC = {
 const canvas = document.getElementById("game");
 // ⭐ タイトル要素取得
 const titleBg = document.getElementById("titleBg");
+const titleBgLoop = document.getElementById("titleBgLoop");
 const titleVideo = document.getElementById("titleVideo");
 const titleStartBtn = document.getElementById("titleStartBtn");
+const gameJumpBtn = document.getElementById("gameJumpBtn");
 const mobileLayer = document.getElementById("mobileLayer");
 titleVideo.poster = "ui_main_sp.png";
 
@@ -605,6 +622,23 @@ function syncMobileEndShareButtons(){
   applyRect(shareTapXBtn, rects.x);
   applyRect(shareTapLINEBtn, rects.line);
 }
+function syncMobileGameJumpButton(){
+  if(!gameJumpBtn) return;
+  if(!isMobile() || state !== STATE.GAME){
+    gameJumpBtn.style.display = "none";
+    return;
+  }
+  const stageRect = getMobileStageRect();
+  const w = Math.round(stageRect.width * 0.92);
+  const h = Math.round(w * (290 / 906));
+  const x = Math.round(stageRect.left + (stageRect.width - w) / 2);
+  const y = Math.round(stageRect.top + stageRect.height - h + (stageRect.height * 0.01));
+  gameJumpBtn.style.left = x + "px";
+  gameJumpBtn.style.top = y + "px";
+  gameJumpBtn.style.width = w + "px";
+  gameJumpBtn.style.height = h + "px";
+  gameJumpBtn.style.display = "block";
+}
 shareTapXBtn?.addEventListener("click",(e)=>{
   e.preventDefault();
   e.stopPropagation();
@@ -614,6 +648,14 @@ shareTapLINEBtn?.addEventListener("click",(e)=>{
   e.preventDefault();
   e.stopPropagation();
   shareToLINE();
+});
+gameJumpBtn?.addEventListener("pointerdown",(e)=>{
+  if(!isMobile() || state !== STATE.GAME) return;
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudioOnce();
+  jumpBtnPressUntil = performance.now() + 120;
+  jump();
 });
 
 
@@ -678,7 +720,7 @@ function fitCanvas(){
 
   // 地面位置: スマホは比率、PCは現状維持
   // スマホの地面基準を少し上げる（キャラ/アイテム/障害物をまとめて上に寄せる）
-  groundY = isMobile() ? (canvas.height * 0.58) : (canvas.height - 200);
+  groundY = isMobile() ? (canvas.height * 0.64) : (canvas.height - 200);
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -748,15 +790,16 @@ function syncMobileLayerLayout(){
   const stageRect = getMobileStageRect();
   const bgRect = { left: 0, top: stageRect.top, width: window.innerWidth, height: stageRect.height };
   const gameBgOnly = (state === STATE.GAME);
+  const gameLift = Math.round(stageRect.height * 0.03);
   const mobileLayerRect = bgRect;
   mobileLayer.style.left = mobileLayerRect.left + "px";
   mobileLayer.style.right = "";
   mobileLayer.style.width = mobileLayerRect.width + "px";
-  const mobileLayerTopOffset = gameBgOnly ? Math.round(stageRect.height * 0.027) : 0;
+  const mobileLayerTopOffset = gameBgOnly ? Math.round(stageRect.height * 0.05) : 0; // 背景だけ少し上へ
   mobileLayer.style.top = (mobileLayerRect.top - mobileLayerTopOffset) + "px";
   mobileLayer.style.height = (mobileLayerRect.height + mobileLayerTopOffset) + "px";
-  mobileLayer.style.objectFit = "cover";
-  mobileLayer.style.objectPosition = gameBgOnly ? "center 5%" : "center bottom";
+  mobileLayer.style.objectFit = gameBgOnly ? "cover" : "cover";
+  mobileLayer.style.objectPosition = gameBgOnly ? "center top" : "center bottom";
   mobileLayer.style.clipPath = "none";
   titleVideo.style.left = stageRect.left + "px";
   titleVideo.style.right = "";
@@ -767,11 +810,54 @@ function syncMobileLayerLayout(){
   titleVideo.style.objectPosition = "center center";
   titleBg.style.left = bgRect.left + "px";
   titleBg.style.right = "";
-  titleBg.style.width = bgRect.width + "px";
-  titleBg.style.top = bgRect.top + "px";
-  titleBg.style.height = bgRect.height + "px";
-  titleBg.style.objectFit = "cover";
-  titleBg.style.objectPosition = "center bottom";
+  if(gameBgOnly){
+    // Canvasゲーム領域の中で、黄色枠相当の範囲に background_sp2.png を表示
+    const canvasRect = {
+      left: stageRect.left,
+      top: stageRect.top - gameLift,
+      width: stageRect.width,
+      height: stageRect.height
+    };
+    const frameTop = canvasRect.top + (canvasRect.height * 0.12);
+    const frameBottom = stageRect.top + (stageRect.height * 0.80); // cover見え方補正で少し上に戻す
+    const frameLeft = canvasRect.left;
+    const frameWidth = canvasRect.width;
+    const frameHeight = Math.max(0, frameBottom - frameTop);
+
+    const fx = Math.round(frameLeft);
+    const fy = Math.round(frameTop);
+    const fw = Math.round(frameWidth);
+    const fh = Math.round(frameHeight);
+
+    titleBg.style.left = fx + "px";
+    titleBg.style.top = fy + "px";
+    titleBg.style.width = fw + "px";
+    titleBg.style.height = fh + "px";
+    titleBg.style.objectFit = "cover";
+    titleBg.style.objectPosition = "center top";
+
+    if(titleBgLoop){
+      titleBgLoop.style.position = "absolute";
+      titleBgLoop.style.left = fx + "px";
+      titleBgLoop.style.top = fy + "px";
+      titleBgLoop.style.width = fw + "px";
+      titleBgLoop.style.height = fh + "px";
+      titleBgLoop.style.zIndex = "94";
+      titleBgLoop.style.backgroundImage = "url('background_sp2.png')";
+      titleBgLoop.style.backgroundRepeat = "repeat-x";
+      titleBgLoop.style.backgroundSize = "auto 100%";
+      titleBgLoop.style.backgroundPosition = `${Math.round(bgScrollX * 0.36)}px top`;
+    }
+  }else{
+    titleBg.style.top = bgRect.top + "px";
+    titleBg.style.width = bgRect.width + "px";
+    titleBg.style.height = bgRect.height + "px";
+    titleBg.style.objectFit = "cover";
+    titleBg.style.objectPosition = "center bottom";
+    if(titleBgLoop){
+      titleBgLoop.style.display = "none";
+    }
+  }
 }
 
 
@@ -1047,16 +1133,20 @@ function getSoundStartBtnRect(){
 }
 
 function getMobileFooterButtonRect(assetKey){
-  const left = canvas.width * 0.03;
-  const top = canvas.height * 0.82;
-  const w = canvas.width * 0.94;
+  const isJumpFooter = (assetKey === "btn_jump_footer");
+  const left = isJumpFooter ? (canvas.width * 0.02) : (canvas.width * 0.03);
+  const w = canvas.width * (isJumpFooter ? 1.06 : 0.94);
   const imgObj = I[assetKey];
   let h;
   if(imgObj?.ok && imgObj.img.naturalWidth && imgObj.img.naturalHeight){
-    h = w * (imgObj.img.naturalHeight / imgObj.img.naturalWidth) * 0.90;
+    const hScale = isJumpFooter ? 0.90 : (assetKey === "btn_retry" ? 0.80 : 0.80); // 他画面もさらに狭く
+    h = w * (imgObj.img.naturalHeight / imgObj.img.naturalWidth) * hScale;
   }else{
     h = canvas.height * 0.10;
   }
+  const top = isJumpFooter
+    ? Math.min(canvas.height * 0.98, canvas.height - h) // できるだけ下、ただし切らない
+    : (canvas.height * 0.82);
   return { x:left, y:top, w, h };
 }
 
@@ -2927,7 +3017,7 @@ function drawUI(){
       // 赤枠相当の領域（スマホEND）
       const scoreBox = {
         x: canvas.width * 0.12,
-        y: canvas.height * 0.41,
+        y: canvas.height * 0.37,
         w: canvas.width * 0.76,
         h: canvas.height * 0.11
       };
@@ -3197,32 +3287,14 @@ function drawScrollingTileX(img, y, w, h, scrollX, baseX=0){
 function drawGame(){
   // 背景
   if(isMobile()){
-    // ベース背景は mobileLayer 側でフル幅表示（Canvasは前景・ゲーム要素を描く）
+    // 背面の background_sp.png は mobileLayer 側で固定表示。Canvas は透明で上物だけ描く
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     if(!I.bg_sp?.ok){
+      // 背面画像が無い場合のみフォールバックをCanvasに出す
       ctx.fillStyle = "#bbdfff";
       ctx.fillRect(0,0,canvas.width,canvas.height);
       drawFallbackText("background_sp.png が見つからない");
-    }
-
-    // background_sp2.png は background_sp.png と同じ「フル幅スケール比」を適用して中央寄せ
-    if(I.bg_sp?.ok && I.bg_sp2?.ok){
-      const baseImg = I.bg_sp.img;
-      const overlayImg = I.bg_sp2.img;
-      const baseW = baseImg.naturalWidth || canvas.width;
-      const baseScale = canvas.width / baseW; // background_sp.png をフル幅にした比率
-
-      const ow = (overlayImg.naturalWidth || canvas.width) * baseScale * 0.88;
-      // 下端位置はなるべく維持しつつ、上側を少し狭くする
-      // 中央のゲーム画像だけ縦を少し縮める（横幅は維持）
-      const oh = (overlayImg.naturalHeight || canvas.height) * baseScale * 0.76;
-      const ox = (canvas.width - ow) / 2;
-      const prevTopRef = (canvas.height - ((overlayImg.naturalHeight || canvas.height) * baseScale * 0.78)) / 2 - (canvas.height * 0.04);
-      const baseOy = prevTopRef - (canvas.height * 0.002);
-      const cropTopOnly = canvas.height * 0.008; // 上だけほんの少し削る
-      const oy = baseOy + cropTopOnly;
-      const drawH = oh - cropTopOnly;
-      // 前景レイヤーは少し遅く流して、切り替わりを自然に見せる
-      drawScrollingTileX(overlayImg, oy, ow, drawH, bgScrollX * 0.72, ox);
     }
   }else{
     const bg = I.bg;
@@ -3290,7 +3362,11 @@ if(mode==="ch" && t < mapRevealUntil){
     if(mobileGameBtnKey){
       const gameBtnRect = getMobileFooterButtonRect(mobileGameBtnKey);
       if(t < comment.until && comment.text){
-        clipBottom = Math.min(clipBottom, gameBtnRect.y - 56 - telopOverlap);
+        const telopH = 68;
+        let boxY = gameBtnRect.y - telopH + 46;
+        boxY = Math.max(boxY, canvas.height * 0.89);
+        const barY = boxY - telopOverlap;
+        clipBottom = Math.min(clipBottom, barY);
       }
     }
     ctx.beginPath();
@@ -3343,7 +3419,7 @@ items.forEach(it=>{
 // キャラ（ぷにっと膨らむアニメ）
 const playerKey = MODE[mode].playerKey;
 
-// ⭐ 膨らみ強さ
+// ⭐ ぷにっと膨らむアニメ
 const scale = 1 + Math.sin(t * 0.015) * 0.04;
 
 const cx = px + player.w/2;
@@ -3447,13 +3523,14 @@ if(t < comment.until && comment.text){
 
   let boxY;
   let textY;
-  const telopH = isMobile() ? 56 : 44;
+  const telopH = isMobile() ? 68 : 44;
   const telopOverlap = isMobile() ? 12 : 0;
 
   // ⭐ スマホ → ジャンプボタンの上に表示
   if(isMobile() && jumpBtnRect){
 
-    boxY = jumpBtnRect.y - telopH; // ← ボタンとの距離（調整OK）
+    boxY = jumpBtnRect.y - telopH + 46; // ボタン寄りにさらに下げる
+    boxY = Math.max(boxY, canvas.height * 0.89); // background_sp2.png の下側に出す
     textY = boxY + (telopH / 2);
 
   }else{
@@ -3473,9 +3550,9 @@ if(t < comment.until && comment.text){
   // テキスト
   ctx.textBaseline = "middle";
   ctx.strokeStyle = "rgba(0,0,0,0.75)";
-  ctx.lineWidth = isMobile() ? 5 : 3;
+  ctx.lineWidth = isMobile() ? 6 : 3;
   ctx.fillStyle = "#fff";
-  ctx.font = isMobile() ? "900 24px sans-serif" : "900 18px sans-serif";
+  ctx.font = isMobile() ? "900 28px sans-serif" : "900 18px sans-serif";
   ctx.textAlign = "center";
   ctx.strokeText(comment.text, canvas.width/2, textY);
   ctx.fillText(comment.text, canvas.width/2, textY);
@@ -3487,28 +3564,7 @@ if(t < comment.until && comment.text){
 // スマホGAME下部: 背景画像に含まれる前画面ボタン/コピーを隠す帯
 // （この後にジャンプボタンを描くので、ジャンプボタンだけ見える）
 if(isMobile()){
-  const footerMaskY = canvas.height * 0.815;
-  ctx.save();
-  ctx.fillStyle = "#5193ff";
-  ctx.fillRect(0, footerMaskY, canvas.width, canvas.height - footerMaskY);
-  // 背景下部のコピー文字は上書きで復元
-  ctx.fillStyle = "#00167a";
-  ctx.font = "700 22px system-ui,-apple-system,\"Hiragino Sans\",\"Noto Sans JP\",sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  const copyText = "@2026 Miraiz ENECHANGE Ltd 著作 ミライズエネチェンジ株式会社";
-  const copyY = canvas.height * 0.981;
-  const sidePad = canvas.width * 0.022; // 端から少し余白
-  const copyX = sidePad;
-  const naturalW = ctx.measureText(copyText).width || 1;
-  const targetW = canvas.width - sidePad * 2;
-  const scaleX = targetW / naturalW;
-  ctx.save();
-  ctx.translate(copyX, copyY);
-  ctx.scale(scaleX, 1);
-  ctx.fillText(copyText, 0, 0);
-  ctx.restore();
-  ctx.restore();
+  // スマホGAME下部の青帯マスクは表示しない
 }else{
   // PCゲーム中の下部コピー
   const copyText = "@2026 Miraiz ENECHANGE Ltd 著作 ミライズエネチェンジ株式会社";
@@ -3537,13 +3593,13 @@ const btnW = canvas.width * (isMobile() ? 0.75 : 0.35);
 const btnX = (canvas.width - btnW) / 2;
 
 // ⭐ 下にずらす量
-const offsetY = isMobile() ? 60 : 40;
+const offsetY = isMobile() ? 175 : 40;
 
 // ⭐ Y座標（最後に計算）
 const btnY = playerGroundY + (groundSpace - btnH) / 2 + offsetY;
 
 if(isMobile()){
-  const mobileJumpRect = drawMobileFooterButtonByState(STATE.GAME);
+  const mobileJumpRect = getMobileFooterButtonRect("btn_jump_footer");
   if(mobileJumpRect){
     jumpBtnRect = mobileJumpRect;
   }else{
@@ -3585,13 +3641,13 @@ const sec = Math.ceil(Math.max(0, remainMs / 1000));
 if(isMobile()){
   // 左上赤枠あたりにバッテリー
   const batteryX = canvas.width * 0.03;
-  const batteryY = canvas.height * 0.145;
+  const batteryY = canvas.height * 0.105;
   drawBattery(batteryX, batteryY, hp);
 
   // 右上赤枠あたりに TIME / SCORE
   const hudRightX = canvas.width * 0.965;
-  const timeY = canvas.height * 0.160;
-  const scoreY = canvas.height * 0.195;
+  const timeY = canvas.height * 0.120;
+  const scoreY = canvas.height * 0.155;
 
   ctx.lineWidth = 8;
   ctx.font = "bold 52px system-ui";
@@ -3769,8 +3825,11 @@ let frameOnlyVisible = false;
 let mobileGameLayoutApplied = false;
 
 function applyMobileBodyBg(stateKey){
-  void stateKey;
   if(!isMobile()) return;
+  if(stateKey === STATE.GAME){
+    document.body.style.background = "transparent";
+    return;
+  }
   document.body.style.background = "#bbdfff";
 }
 
@@ -3779,6 +3838,7 @@ function syncMobileOverlayByState(stateKey){
     mobileLayer.style.display = "none";
     titleVideo.style.display = "none";
     titleBg.style.display = "none";
+    if(titleBgLoop) titleBgLoop.style.display = "none";
     return;
   }
 
@@ -3789,6 +3849,7 @@ function syncMobileOverlayByState(stateKey){
   mobileLayer.style.display = "none";
   titleVideo.style.display = "none";
   titleBg.style.display = (stateKey === STATE.SOUND) ? "block" : "none";
+  if(titleBgLoop) titleBgLoop.style.display = "none";
 
   if(stateKey === STATE.SOUND){
     // SOUNDは ui_sound_sp.png を背景レイヤーに表示 + Canvas上ボタン
@@ -3858,9 +3919,18 @@ function syncMobileOverlayByState(stateKey){
   }
 
   if(stateKey === STATE.GAME){
-    // GAME背景は mobileLayer 側でフル幅表示（Canvas前景は別描画）
+    // スマホGAME: background_sp.png 背面固定 + background_sp2.png をその上
     titleVideo.style.display = "none";
+    titleBg.onerror = ()=>{
+      mobileUiFallbackMsg = "background_sp2.png が見つからない";
+    };
+    titleBg.onload = ()=>{
+      mobileUiFallbackMsg = "";
+    };
+    titleBg.src = "background_sp2.png";
+    titleBg.style.zIndex = "94";
     titleBg.style.display = "none";
+    if(titleBgLoop) titleBgLoop.style.display = "block";
     mobileLayer.onerror = ()=>{
       mobileUiFallbackMsg = "background_sp.png が見つからない";
     };
@@ -3882,6 +3952,8 @@ function setMobileFrameVisible(visible, stateKey){
   if(!visible){
     mobileLayer.style.display = "none";
     titleVideo.style.display = "none";
+    titleBg.style.display = "none";
+    if(titleBgLoop) titleBgLoop.style.display = "none";
     return;
   }
   syncMobileOverlayByState(stateKey);
@@ -3892,10 +3964,16 @@ function syncMobileGameCanvasLayout(){
   if(state === STATE.GAME){
     const stageRect = getMobileStageRect();
     const gameLift = Math.round(stageRect.height * 0.03); // ゲーム画面だけ少し上へ
-    canvas.style.left = stageRect.left + "px";
-    canvas.style.top = (stageRect.top - gameLift) + "px";
-    canvas.style.width = stageRect.width + "px";
-    canvas.style.height = stageRect.height + "px"; // 縦伸び防止（キャラが縦長に見える対策）
+    const scale = Math.min(stageRect.width / canvas.width, stageRect.height / canvas.height);
+    const displayW = Math.round(canvas.width * scale);
+    const displayH = Math.round(canvas.height * scale);
+    const displayLeft = Math.round(stageRect.left + (stageRect.width - displayW) / 2);
+    const displayTop = Math.round((stageRect.top - gameLift) + (stageRect.height - displayH) / 2);
+
+    canvas.style.left = displayLeft + "px";
+    canvas.style.top = displayTop + "px";
+    canvas.style.width = displayW + "px";
+    canvas.style.height = displayH + "px"; // 縦横比固定（最終表示も引き伸ばさない）
     mobileGameLayoutApplied = true;
   }else if(mobileGameLayoutApplied){
     mobileGameLayoutApplied = false;
@@ -3911,9 +3989,11 @@ if(isMobile()){
   syncMobileOverlayByState(state);
   syncMobileGameCanvasLayout();
   syncMobileEndShareButtons();
+  syncMobileGameJumpButton();
 }else{
   mobileLayer.style.display = "none";
   titleVideo.style.display = "none";
+  if(gameJumpBtn) gameJumpBtn.style.display = "none";
   hideMobileEndShareButtons();
 }
 // ⭐ SOUND以外は×表示
