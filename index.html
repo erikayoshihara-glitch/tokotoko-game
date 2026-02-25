@@ -3895,7 +3895,7 @@ function syncMobileGameCanvasLayout(){
     canvas.style.left = stageRect.left + "px";
     canvas.style.top = (stageRect.top - gameLift) + "px";
     canvas.style.width = stageRect.width + "px";
-    canvas.style.height = (stageRect.height + gameLift) + "px";
+    canvas.style.height = stageRect.height + "px"; // 縦伸び防止（キャラが縦長に見える対策）
     mobileGameLayoutApplied = true;
   }else if(mobileGameLayoutApplied){
     mobileGameLayoutApplied = false;
