@@ -922,6 +922,7 @@ let normalBgmSrc = null;
 let pendingGameBgmSrc = null; // カウントダウン終了後に再生するゲームBGM
 let audioUnlocked = false;
 let audioCtx = null;
+let endFooterLockedUntilBgmEnd = false; // 結果画面の下部ボタンだけロック
 
 
 function stopBgm(){
@@ -952,6 +953,10 @@ function stopBgm(){
   feverBgm = null;
   normalBgmSrc = null;
   pendingGameBgmSrc = null;
+}
+
+function isEndFooterLocked(){
+  return state === STATE.END && endFooterLockedUntilBgmEnd;
 }
 
 function playBgm(src, loop=true){
@@ -1659,12 +1664,14 @@ canvas.addEventListener("pointerdown",(e)=>{
     if(state === STATE.END){
       const pcFooterAreas = getPcFooterButtonHitAreas(STATE.END);
       if(pcFooterAreas?.left && hitRect(pcFooterAreas.left, x, y)){
+        if(isEndFooterLocked()) return;
         triggerCanvasPressFx(pcFooterAreas.left);
         stopBgm();
         state = STATE.SOUND; // 赤枠: 音あり/音なし選択画面
         return;
       }
       if(pcFooterAreas?.main && hitRect(pcFooterAreas.main, x, y)){
+        if(isEndFooterLocked()) return;
         triggerCanvasPressFx(pcFooterAreas.main);
         stopBgm();
         state = STATE.COURSE; // 黒枠: コース選択画面
@@ -1768,6 +1775,7 @@ canvas.addEventListener("pointerdown",(e)=>{
       }
       // END: 左下の家ボタンでトップへ戻る
       if(state === STATE.END && hitRect(footerHit.left, x, y)){
+        if(isEndFooterLocked()) return;
         triggerCanvasPressFx(footerHit.left);
         stopBgm();
         state = STATE.TITLE;
@@ -1775,6 +1783,7 @@ canvas.addEventListener("pointerdown",(e)=>{
       }
       // END: もう一度遊ぶ（前前の画面 = START）へ戻る
       if(state === STATE.END && hitRect(footerHit.main, x, y)){
+        if(isEndFooterLocked()) return;
         triggerCanvasPressFx(footerHit.main);
         stopBgm();
         state = STATE.START;
@@ -2516,6 +2525,7 @@ function startGame(){
   savePlayCount(playCount);
 
   gameEvent = decideGameEvent();
+  endFooterLockedUntilBgmEnd = false;
   resetGameCore();
 
   stopBgm();
@@ -2547,13 +2557,26 @@ function finish(cleared){
 
   stopBgm();
   state = STATE.END;
+  endFooterLockedUntilBgmEnd = !!soundOn;
 
   if(soundOn){
     const bgmSrc = cleared
       ? RESULT_BGM[mode].clear
       : RESULT_BGM[mode].over;
 
-    playBgm(bgmSrc, false); 
+    playBgm(bgmSrc, false);
+    if(bgm){
+      bgm.addEventListener("ended", ()=>{
+        endFooterLockedUntilBgmEnd = false;
+      }, { once:true });
+      bgm.addEventListener("error", ()=>{
+        endFooterLockedUntilBgmEnd = false;
+      }, { once:true });
+    }else{
+      endFooterLockedUntilBgmEnd = false;
+    }
+  }else{
+    endFooterLockedUntilBgmEnd = false;
   }
 }  
 function getShareText(){
