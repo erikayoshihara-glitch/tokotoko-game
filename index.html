@@ -575,6 +575,20 @@ const canvas = document.getElementById("game");
 // ⭐ タイトル要素取得
 const titleBg = document.getElementById("titleBg");
 const titleBgLoop = document.getElementById("titleBgLoop");
+let titleBgLoopA = null;
+let titleBgLoopB = null;
+if(titleBgLoop){
+  titleBgLoopA = document.createElement("div");
+  titleBgLoopB = document.createElement("div");
+  [titleBgLoopA, titleBgLoopB].forEach((el)=>{
+    el.style.position = "absolute";
+    el.style.top = "0";
+    el.style.backgroundImage = "url('background_sp2.png')";
+    el.style.backgroundRepeat = "no-repeat";
+    el.style.backgroundPosition = "left top";
+    titleBgLoop.appendChild(el);
+  });
+}
 const titleVideo = document.getElementById("titleVideo");
 const titleStartBtn = document.getElementById("titleStartBtn");
 const gameJumpBtn = document.getElementById("gameJumpBtn");
@@ -837,16 +851,38 @@ function syncMobileLayerLayout(){
     titleBg.style.objectPosition = "center top";
 
     if(titleBgLoop){
+      const loopImgW = (I.bg_sp2?.ok && I.bg_sp2.img.naturalWidth) ? I.bg_sp2.img.naturalWidth : 0;
+      const loopImgH = (I.bg_sp2?.ok && I.bg_sp2.img.naturalHeight) ? I.bg_sp2.img.naturalHeight : 0;
+      const baseTileW = (loopImgW && loopImgH) ? Math.ceil((fh * loopImgW) / loopImgH) : 0;
+      const edgeTrim = 3; // 元画像の端の線/透過を避ける
+      const tileW = baseTileW || fw;
+      const tileH = fh + 2;
+      const tileOverlap = 4; // A/Bを少し重ねる量
+      const period = Math.max(1, tileW - tileOverlap); // 実際のループ周期は重なり分を引く
+      const scrollPx = Math.round((-bgScrollX) * 0.36);
+      const offset = -((((scrollPx % period) + period) % period));
       titleBgLoop.style.position = "absolute";
       titleBgLoop.style.left = fx + "px";
       titleBgLoop.style.top = fy + "px";
       titleBgLoop.style.width = fw + "px";
       titleBgLoop.style.height = fh + "px";
+      titleBgLoop.style.overflow = "hidden";
       titleBgLoop.style.zIndex = "94";
-      titleBgLoop.style.backgroundImage = "url('background_sp2.png')";
-      titleBgLoop.style.backgroundRepeat = "repeat-x";
-      titleBgLoop.style.backgroundSize = "auto 100%";
-      titleBgLoop.style.backgroundPosition = `${Math.round(bgScrollX * 0.36)}px top`;
+      if(titleBgLoopA && titleBgLoopB){
+        titleBgLoopA.style.display = "block";
+        titleBgLoopB.style.display = "block";
+        titleBgLoopA.style.left = `${offset}px`;
+        titleBgLoopB.style.left = `${offset + period}px`;
+        titleBgLoopA.style.width = `${tileW}px`;
+        titleBgLoopB.style.width = `${tileW}px`;
+        titleBgLoopA.style.height = `${tileH}px`;
+        titleBgLoopB.style.height = `${tileH}px`;
+        // 端を少しだけトリミングして継ぎ目の線を回避
+        titleBgLoopA.style.backgroundSize = `${tileW + edgeTrim * 2}px ${tileH}px`;
+        titleBgLoopB.style.backgroundSize = `${tileW + edgeTrim * 2}px ${tileH}px`;
+        titleBgLoopA.style.backgroundPosition = `${-edgeTrim}px top`;
+        titleBgLoopB.style.backgroundPosition = `${-edgeTrim}px top`;
+      }
     }
   }else{
     titleBg.style.top = bgRect.top + "px";
@@ -856,6 +892,8 @@ function syncMobileLayerLayout(){
     titleBg.style.objectPosition = "center bottom";
     if(titleBgLoop){
       titleBgLoop.style.display = "none";
+      if(titleBgLoopA) titleBgLoopA.style.display = "none";
+      if(titleBgLoopB) titleBgLoopB.style.display = "none";
     }
   }
 }
@@ -1074,13 +1112,6 @@ function triggerCanvasPressFx(rect){
   if(!rect) return;
   // 現在はPC/スマホともに押下オーバーレイ演出を使わない
   return;
-  canvasPressFx = {
-    x: rect.x,
-    y: rect.y,
-    w: rect.w,
-    h: rect.h,
-    until: performance.now() + 120
-  };
 }
 
 function drawCanvasPressFx(){
@@ -1088,26 +1119,6 @@ function drawCanvasPressFx(){
   // 現在は未使用（保険で残骸を消す）
   canvasPressFx = null;
   return;
-  const remain = canvasPressFx.until - performance.now();
-  if(remain <= 0){
-    canvasPressFx = null;
-    return;
-  }
-  const alpha = Math.min(1, remain / 120);
-  const r = Math.min(24, Math.max(12, Math.min(canvasPressFx.w, canvasPressFx.h) * 0.18));
-
-  ctx.save();
-  ctx.globalAlpha = 0.18 + alpha * 0.12;
-  ctx.fillStyle = "#ffffff";
-  roundRect(ctx, canvasPressFx.x, canvasPressFx.y, canvasPressFx.w, canvasPressFx.h, r);
-  ctx.fill();
-
-  ctx.globalAlpha = 0.22 + alpha * 0.15;
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "rgba(0,0,0,0.28)";
-  roundRect(ctx, canvasPressFx.x + 1.5, canvasPressFx.y + 1.5, canvasPressFx.w - 3, canvasPressFx.h - 3, Math.max(8, r - 2));
-  ctx.stroke();
-  ctx.restore();
 }
 
 function getSoundStartBtnRect(){
@@ -2161,6 +2172,7 @@ function endFeverNow(){
     }catch(e){}
     feverBgm = null;
   }
+  feverUntil = 0;
 
   // 通常BGMを再開（ゲーム中のみ）
   if(running && bgm){
