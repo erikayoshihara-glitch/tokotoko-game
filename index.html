@@ -3018,15 +3018,6 @@ function drawUI(){
   if(isMobile()){
     if(state===STATE.SOUND){
       // SOUND下部ボタン（Canvas %配置）
-      const btn = drawMobileFooterButtonByState(STATE.SOUND) || getSoundStartBtnRect();
-      console.log("[btn_sound_sp] draw rect", {
-        canvasW: canvas.width,
-        canvasH: canvas.height,
-        x: Math.round(btn.x),
-        y: Math.round(btn.y),
-        w: Math.round(btn.w),
-        h: Math.round(btn.h)
-      });
       BTN.sound_on_sp = {
         x1: btn.x / canvas.width,
         x2: (btn.x + btn.w) / canvas.width,
