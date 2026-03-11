@@ -607,9 +607,10 @@ let pcCourseHoverMode = null; // "mm" | "ch" | null
 canvas.style.touchAction = "none";
 
 // iOS Safari: ゲーム中のダブルタップ/ピンチでページ拡大されるのを防ぐ
+const _isMobile = detectMobile(); // 1回だけ判定
 let lastTouchEndAt = 0;
 document.addEventListener("touchend",(e)=>{
-  if(!isMobile()) return;
+  if(!_isMobile) return;
   const now = Date.now();
   if(now - lastTouchEndAt < 300){
     e.preventDefault();
@@ -618,12 +619,12 @@ document.addEventListener("touchend",(e)=>{
 },{ passive:false });
 
 document.addEventListener("gesturestart",(e)=>{
-  if(!isMobile()) return;
+  if(!_isMobile) return;
   e.preventDefault();
 },{ passive:false });
 
 document.addEventListener("touchmove",(e)=>{
-  if(!isMobile()) return;
+  if(!_isMobile) return;
   if(e.touches && e.touches.length > 1){
     e.preventDefault();
   }
