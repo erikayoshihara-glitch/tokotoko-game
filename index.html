@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -605,6 +605,29 @@ let pcCourseHoverMode = null; // "mm" | "ch" | null
 
 
 canvas.style.touchAction = "none";
+
+// iOS Safari: ゲーム中のダブルタップ/ピンチでページ拡大されるのを防ぐ
+let lastTouchEndAt = 0;
+document.addEventListener("touchend",(e)=>{
+  if(!isMobile()) return;
+  const now = Date.now();
+  if(now - lastTouchEndAt < 300){
+    e.preventDefault();
+  }
+  lastTouchEndAt = now;
+},{ passive:false });
+
+document.addEventListener("gesturestart",(e)=>{
+  if(!isMobile()) return;
+  e.preventDefault();
+},{ passive:false });
+
+document.addEventListener("touchmove",(e)=>{
+  if(!isMobile()) return;
+  if(e.touches && e.touches.length > 1){
+    e.preventDefault();
+  }
+},{ passive:false });
 
 // ⭐ 追加（×ボタン取得）
 const closeBtn = document.getElementById("closeBtn");
