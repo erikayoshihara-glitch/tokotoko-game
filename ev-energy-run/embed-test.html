@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EVエナジーラン｜埋め込みテスト固定ページ</title>
+<style>
+  :root{
+    --maxw: 480px;       /* ゲーム＆コンテンツの最大幅 */
+    --accent:#ff861f;
+    --ink:#37475a;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,#eaf6ff 0%,#fff 40%);
+    line-height:1.7;
+  }
+  .wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:20px 16px 60px;
+  }
+  /* PC（広い画面）ではコンテンツ＆ゲーム枠を横に広げる */
+  @media (min-width:700px){
+    .wrap{ max-width:860px; }
+  }
+  /* ① ヘッダー：タイトル画像 */
+  .site-header{
+    text-align:center;
+    padding:8px 0 4px;
+  }
+  .site-header img{
+    display:block;
+    width:88%;
+    max-width:420px;
+    margin:0 auto;
+  }
+  /* ② iframe：スマホ＝3:4（縦）/ PC＝16:9（横） */
+  .game-embed{
+    position:relative;
+    width:100%;
+    aspect-ratio:3 / 4;          /* スマホ既定：縦 */
+    margin:14px auto 22px;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(60,80,110,.18);
+    background:#cfeafe;
+  }
+  @media (min-width:700px){
+    .game-embed{
+      aspect-ratio:4 / 3;        /* PC：16:9パネル＋下にボタン領域 */
+    }
+  }
+  .game-embed iframe{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:0;
+    display:block;
+  }
+  /* ③ 遊び方 */
+  .howto{
+    background:#fff;
+    border-radius:20px;
+    padding:22px 18px 26px;
+    margin-top:18px;
+    box-shadow:0 8px 24px rgba(60,80,110,.12);
+  }
+  .howto .ttl{
+    text-align:center;
+    font-size:24px;
+    font-weight:900;
+    color:var(--ink);
+    margin:4px 0 16px;
+  }
+  .howto .intro{ margin:0 4px 14px; }
+  .howto .intro .line{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; margin:4px 0; }
+  .howto .intro .line img{ width:26px; height:26px; object-fit:contain; }
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .sub{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+  @media (max-width:620px){
+    .cards, .sub{ grid-template-columns:1fr; }
+  }
+  .card, .box{
+    background:#f5f9ff;
+    border-radius:16px;
+    padding:16px;
+  }
+  .card .head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .card .head img{ width:62px; height:62px; object-fit:contain; }
+  .card .head .name{
+    font-size:19px; font-weight:900; color:var(--ink);
+  }
+  .row{ display:flex; align-items:center; gap:8px; margin:9px 0; font-size:15px; }
+  .row .ic{ display:flex; align-items:center; gap:4px; }
+  .row img{ width:30px; height:30px; object-fit:contain; }
+  .box h3{ font-size:18px; font-weight:900; margin:0 0 10px; color:var(--ink); }
+  .box .row{ margin:6px 0; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- ① ヘッダー：タイトル画像 -->
+    <header class="site-header">
+      <img src="title_logo.png" alt="ミラまる＆チャーすけ EVエナジーラン">
+    </header>
+
+    <!-- ② ゲーム本体（iframe・3:4） -->
+    <div class="game-embed">
+      <iframe src="index.html" title="ミラまる＆チャーすけ EVエナジーラン" loading="lazy" allow="autoplay"></iframe>
+    </div>
+
+    <!-- ③ 遊び方 -->
+    <section class="howto">
+      <div class="ttl">遊び方</div>
+
+      <div class="intro">
+        <div class="line"><img src="ch_item_lightning.png" alt="⚡">を集めてスコアを伸ばそう！</div>
+        <div class="line"><img src="ch_item_lightning_big.png" alt="⚡">は高得点！</div>
+      </div>
+
+      <div class="cards">
+        <!-- チャーすけコース -->
+        <div class="card">
+          <div class="head">
+            <img src="ch_character.png" alt="チャーすけ">
+            <div class="name">チャーすけコース</div>
+          </div>
+          <div class="row"><span class="ic"><img src="ch_item_repair.png"><img src="ch_item_station.png"><img src="ch_item_battery.png"></span> HP回復</div>
+          <div class="row"><img src="ch_item_curry.png"> 一定時間スピードUP</div>
+          <div class="row"><img src="ch_item_compass.png"> 一定時間、敵の出現が少なめ</div>
+          <div class="row"><img src="ch_item_map.png"> 一定時間、トラブルが見やすくなる</div>
+        </div>
+
+        <!-- ミラまるコース -->
+        <div class="card">
+          <div class="head">
+            <img src="mm_character.png" alt="ミラまる">
+            <div class="name">ミラまるコース</div>
+          </div>
+          <div class="row"><span class="ic"><img src="mm_item_onigiri.png"><img src="ch_item_battery.png"></span> HP回復（+1）</div>
+          <div class="row"><img src="mm_item_dango.png"> 一定時間スピードUP</div>
+          <div class="row"><img src="mm_item_tea.png"> 一定時間、敵の出現が少なめ</div>
+          <div class="row"><img src="mm_item_senbei.png"> 1回だけダメージ無効（バリア）</div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <div class="box">
+          <h3>フィーバー</h3>
+          <div class="row"><img src="ch_event_fever.png"> フィーバー中は大量得点！</div>
+        </div>
+        <div class="box">
+          <h3>トラブル</h3>
+          <div class="row"><span class="ic"><img src="ch_enemy_construction.png"><img src="ch_enemy_traffic.png"><img src="ch_enemy_trouble.png"><img src="ch_enemy_pitfall.png"></span></div>
+          <div>当たるとHPが減るので注意！</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  <script>
+    // iframe内の縦スワイプを受け取って親ページをスクロール（クロスオリジン対策）
+    window.addEventListener("message", function(e){
+      if(e && e.data && e.data.type === "evrun-scroll"){
+        window.scrollBy(0, e.data.dy || 0);
+      }
+    });
+  </script>
+</body>
+</html>
