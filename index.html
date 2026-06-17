@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ミラまる＆チャーすけのEVエナジーラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   *{
   -webkit-tap-highlight-color: transparent;
@@ -22,7 +25,7 @@ position:relative;
 display:flex;
 align-items:center;
 justify-content:center;
-font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+font-family:"Zen Maru Gothic",system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
 }
 canvas,
 button,
@@ -1330,7 +1333,7 @@ function drawPcCourseSelectionOverlay(){
     }
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "900 24px sans-serif";
+    ctx.font = "900 24px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
     ctx.fillStyle = "#1460d2";
     ctx.fillText("選択中", badgeX + badgeW/2, badgeY + badgeH/2 + 1);
     ctx.restore();
@@ -1450,7 +1453,7 @@ function drawCodeButton(rect, label, opts){
   const icon = opts.icon || null;
   const iconSize = (h - lip) * 0.46;
   const hasLabel = !!(label && label.length);
-  ctx.font = `900 ${fs}px system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif`;
+  ctx.font = `900 ${fs}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
   ctx.textBaseline = "middle";
   if(icon && hasLabel){
     const tw = ctx.measureText(label).width;
@@ -1753,7 +1756,7 @@ function drawMobileCourseSelectionOverlay(){
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#0d56d8";
-  ctx.font = "900 24px sans-serif";
+  ctx.font = "900 24px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.fillText("選択中", badgeX + badgeW/2, badgeY + badgeH/2 + 1);
   ctx.restore();
 }
@@ -2986,7 +2989,7 @@ function drawUI(){
         const cx2 = panel.x + panel.w * 0.5;
         const cy2 = panel.y + panel.h * 0.18;
         ctx.save();
-        ctx.font = `900 ${fs}px system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif`;
+        ctx.font = `900 ${fs}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
         const tw = ctx.measureText(label).width;
         const padX = fs * 0.9, padY = fs * 0.45;
         const pw = tw + padX*2, ph = fs + padY*2;
@@ -3175,7 +3178,7 @@ if(state===STATE.END){
   ctx.fillStyle = "#fff";
   ctx.strokeStyle = isMobile() ? "rgba(0,0,0,0.45)" : "#5193ff";
   if(isMobile()){
-    ctx.font = "900 44px sans-serif";
+    ctx.font = "900 44px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
     ctx.lineWidth = 6;
     const scoreY = panel.y + panel.h * 0.43;
     ctx.strokeText(text, canvas.width/2, scoreY);
@@ -3189,10 +3192,10 @@ if(state===STATE.END){
       h: canvas.height * 0.18
     };
     let fontSize = Math.floor(scoreBox.h * 0.72);
-    ctx.font = `900 ${fontSize}px sans-serif`;
+    ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
     while(ctx.measureText(text).width > scoreBox.w * 0.96 && fontSize > 26){
       fontSize -= 2;
-      ctx.font = `900 ${fontSize}px sans-serif`;
+      ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
     }
     ctx.lineWidth = Math.max(5, Math.floor(fontSize * 0.09));
     const scoreX = scoreBox.x + scoreBox.w / 2 + (canvas.width * 0.02);
@@ -3284,7 +3287,7 @@ function drawGame(){
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const fontSize = isMobile() ? (countdown.label === "GO!" ? 126 : 138) : (countdown.label === "GO!" ? 108 : 122);
-    ctx.font = `900 ${fontSize}px sans-serif`;
+    ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
     ctx.lineWidth = Math.max(8, Math.floor(fontSize * 0.10));
     ctx.strokeStyle = "#5193ff";
     ctx.fillStyle = "#fff";
@@ -3413,7 +3416,7 @@ popups.forEach(p=>{
   ctx.translate(p.x, p.y);
   ctx.scale(scale, scale);
   // ⭐ 文字大きく
-  ctx.font = "bold 28px sans-serif";
+  ctx.font = "bold 28px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.textAlign = "center";
   // ⭐ 黒ふち（超重要）
   ctx.lineWidth = 5;
@@ -3427,7 +3430,7 @@ popups.forEach(p=>{
 ctx.restore();
 if(t < comboTextUntil && comboText){
   ctx.save();
-  ctx.font = isMobile() ? "bold 42px sans-serif" : "bold 48px sans-serif";
+  ctx.font = isMobile() ? "bold 42px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif" : "bold 48px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.textAlign = "center";
   ctx.lineWidth = 6;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
@@ -3444,7 +3447,7 @@ if(t < comment.until && comment.text){
     const cyT = (p.y + p.h + getButtonRowTop()) / 2;
     const fs = Math.floor(canvas.height * 0.022);
     ctx.save();
-    ctx.font = `900 ${fs}px system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif`;
+    ctx.font = `900 ${fs}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
     const tw = ctx.measureText(comment.text).width;
     const padX = fs * 0.95, padY = fs * 0.5;
     const pw = Math.min(tw + padX*2, canvas.width * 0.9);
@@ -3481,7 +3484,7 @@ if(t < comment.until && comment.text){
     ctx.strokeStyle = "rgba(0,0,0,0.75)";
     ctx.lineWidth = 3;
     ctx.fillStyle = "#fff";
-    ctx.font = "900 18px sans-serif";
+    ctx.font = "900 18px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
     ctx.textAlign = "center";
     ctx.strokeText(comment.text, canvas.width/2, textY);
     ctx.fillText(comment.text, canvas.width/2, textY);
@@ -3549,17 +3552,17 @@ if(isMobile()){
   ctx.fillStyle = "#37475a";
   ctx.strokeStyle = "rgba(255,255,255,0.9)";
   ctx.lineWidth = 6;
-  ctx.font = "900 36px system-ui,-apple-system,sans-serif";
+  ctx.font = "900 36px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.lineWidth = 7;
   ctx.strokeText(`SCORE ${score}`, canvas.width * 0.90, hudCenterY);
   ctx.fillText(`SCORE ${score}`, canvas.width * 0.90, hudCenterY);
   ctx.restore();
 }else{
   ctx.lineWidth = 6;
-  ctx.font = "bold 42px system-ui";
+  ctx.font = "bold 42px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.strokeText(`TIME ${sec}`, canvas.width - 20, 20);
   ctx.fillText(`TIME ${sec}`, canvas.width - 20, 20);
-  ctx.font = "bold 28px system-ui";
+  ctx.font = "bold 28px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.strokeText(`SCORE ${score}`, canvas.width - 20, 70);
   ctx.fillText(`SCORE ${score}`, canvas.width - 20, 70);
   drawBattery(20, 20, hp);
@@ -3570,9 +3573,9 @@ ctx.restore();
 function drawFallbackText(msg){
   ctx.save();
   ctx.fillStyle="#111";
-  ctx.font="bold 18px sans-serif";
+  ctx.font="bold 18px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.fillText(msg, 40, 80);
-  ctx.font="14px sans-serif";
+  ctx.font="14px 'Zen Maru Gothic', system-ui, 'Hiragino Sans', 'Noto Sans JP', sans-serif";
   ctx.fillText("ファイル名を再確認して、index.htmlと同じフォルダに置いてね", 40, 110);
   ctx.restore();
 }
@@ -4376,11 +4379,11 @@ function drawTimeBadge(sec, centerY){
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.fillStyle = low ? "#ff5a5a" : "#5193ff";
-  ctx.font = `900 ${Math.floor(h*0.40)}px system-ui,-apple-system,sans-serif`;
+  ctx.font = `900 ${Math.floor(h*0.40)}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
   ctx.fillText("TIME", x + h*0.38, y + h/2 + 1);
   ctx.textAlign = "right";
   ctx.fillStyle = "#37475a";
-  ctx.font = `900 ${Math.floor(h*0.56)}px system-ui,-apple-system,sans-serif`;
+  ctx.font = `900 ${Math.floor(h*0.56)}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
   ctx.fillText(String(sec), x + w - h*0.38, y + h/2 + 1);
   ctx.restore();
 }
@@ -4398,7 +4401,7 @@ function drawSpText(text, x, y, size, color, stroke){
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `900 ${size}px system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif`;
+  ctx.font = `900 ${size}px 'Zen Maru Gothic', system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif`;
   if(stroke){
     ctx.lineWidth = Math.max(3, size * 0.16);
     ctx.lineJoin = "round";
