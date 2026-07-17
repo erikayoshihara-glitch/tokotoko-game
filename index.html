@@ -1092,7 +1092,7 @@ function stopAllSE(){
   });
   activeSeList.clear();
 }
-function playSE(key){
+function playSE(key){if(typeof soundOn!=='undefined'&&!soundOn)return;try{var _a=sePool[key];if(!_a){if(!SE_SRC||!SE_SRC[key])return;_a=sePool[key]=new Audio(SE_SRC[key]);}try{activeSeList&&activeSeList.add(_a);}catch(e){}try{_a.currentTime=0;}catch(e){}var _pr=_a.play();if(_pr&&_pr.catch)_pr.catch(function(){});}catch(e){}return;
   if(!soundOn) return;
   const src = SE_SRC[key];
   if(!src) return;
