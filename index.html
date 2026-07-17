@@ -3967,7 +3967,7 @@ let fxConfettiAcc = 0;
 function fxRand(a,b){ return a + Math.random()*(b-a); }
 function fxSpawn(p){
   fxParticles.push(p);
-  if(fxParticles.length > 280) fxParticles.splice(0, 40);
+  var __fxCap=(typeof isMobile==='function'&&isMobile())?80:280; if(fxParticles.length > __fxCap) fxParticles.splice(0, fxParticles.length-__fxCap);
 }
 // ⚡取得など：キラキラ放射＋発光リング
 function fxSparkle(x, y, color){
