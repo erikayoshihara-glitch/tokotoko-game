@@ -1486,7 +1486,7 @@ function drawCodeButton(rect, label, opts){
   ctx.restore();
 }
 // ★ 白のコードアイコン（絵文字の代わり）
-function drawIcon(type, cx, cy, s, color){
+function drawIcon(type, cx, cy, s, color){if(type==="retry"){ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(3,s*0.16);ctx.lineCap='round';ctx.lineJoin='round';var _r=s*0.38,_st=-Math.PI*0.35,_en=Math.PI*1.05;ctx.beginPath();ctx.arc(cx,cy,_r,_st,_en,false);ctx.stroke();var _ax=cx+_r*Math.cos(_st)-s*0.15,_ay=cy+_r*Math.sin(_st),_tg=_st-Math.PI/2,_ah=s*0.30;ctx.beginPath();ctx.moveTo(_ax+_ah*Math.cos(_tg),_ay+_ah*Math.sin(_tg));ctx.lineTo(_ax+_ah*Math.cos(_tg+2.4),_ay+_ah*Math.sin(_tg+2.4));ctx.lineTo(_ax+_ah*Math.cos(_tg-2.4),_ay+_ah*Math.sin(_tg-2.4));ctx.closePath();ctx.fill();ctx.restore();return;}
   const r = s/2;
   ctx.save();
   ctx.fillStyle = color;
@@ -3545,7 +3545,7 @@ const remainMs = GAME_MS - getGameElapsedMs();
 const sec = Math.ceil(Math.max(0, remainMs / 1000));
 if(isMobile()){
   // HUDの縦中央を統一
-  const hudCenterY = canvas.height * 0.105;
+  const hudCenterY = canvas.height * 0.19;
   // バッテリー（左・少し右へ）。drawBatteryはtop指定なので中央が合うよう半分上げる
   const battSize = isLandscapeStage() ? 44 : 64; // drawBattery内のサイズに合わせる
   drawBattery(canvas.width * 0.08, hudCenterY - battSize/2, hp);
@@ -3961,7 +3961,7 @@ function drawBattery(x,y,hp){
   - fxJump / fxLand : スカッシュ＆ストレッチ＋着地の砂煙
   - fxUpdate / fxDrawWorld : 毎フレーム更新＆描画（粒子/紙吹雪/スピードライン）
 ========================================================= */
-let fxParticles = [];;(function(){try{var _d=document.createElement('div');_d.style.cssText='position:fixed;left:4px;top:4px;z-index:99999;background:rgba(0,0,0,.7);color:#0f0;font:11px monospace;padding:4px 6px;border-radius:5px;pointer-events:none;white-space:pre';var _a=function(){document.body&&document.body.appendChild(_d);};document.addEventListener('DOMContentLoaded',_a);_a();var _l=performance.now(),_n=0,_ac=0,_w=0;function _lp(t){var dd=t-_l;_l=t;_ac+=dd;_n++;if(dd>_w)_w=dd;if(_n>=20){var f=Math.round(1000/(_ac/_n));_ac=0;_n=0;var s='FPS '+f+' worst '+_w.toFixed(0)+'ms';try{s+=' fx'+fxParticles.length;}catch(e){}try{s+=' en'+enemies.length+' it'+items.length;}catch(e){}try{s+=' cf'+endConfetti.length;}catch(e){}if(performance.memory)s+=' '+Math.round(performance.memory.usedJSHeapSize/1048576)+'MB';_d.textContent=s;_w=0;}requestAnimationFrame(_lp);}requestAnimationFrame(_lp);}catch(e){}})();
+let fxParticles = [];
 let fxPlayerStretch = 0; // +で縦伸び / -で潰れ。時間で0へ減衰
 let fxConfettiAcc = 0;
 function fxRand(a,b){ return a + Math.random()*(b-a); }
