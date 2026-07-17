@@ -987,7 +987,7 @@ function syncMobileLayerLayout(){
 ========================================================= */
 function loadOneImage(src){
   return new Promise((resolve)=>{
-    const img = new Image();
+    const img = (function(){var _im=new Image();_im.addEventListener('load',function(){try{if(_im.decode)_im.decode().catch(function(){});}catch(e){}});return _im;})();
     img.onload = ()=>resolve({ok:true, img});
     img.onerror = ()=>resolve({ok:false, img:null});
     img.src = src;
