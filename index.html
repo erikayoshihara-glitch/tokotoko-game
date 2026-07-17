@@ -3545,7 +3545,7 @@ const remainMs = GAME_MS - getGameElapsedMs();
 const sec = Math.ceil(Math.max(0, remainMs / 1000));
 if(isMobile()){
   // HUDの縦中央を統一
-  const hudCenterY = canvas.height * 0.21;
+  const hudCenterY = canvas.height * 0.105;
   // バッテリー（左・少し右へ）。drawBatteryはtop指定なので中央が合うよう半分上げる
   const battSize = isLandscapeStage() ? 44 : 64; // drawBattery内のサイズに合わせる
   drawBattery(canvas.width * 0.08, hudCenterY - battSize/2, hp);
