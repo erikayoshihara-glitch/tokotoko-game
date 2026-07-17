@@ -3827,7 +3827,7 @@ lastTime = time;
           // TITLE：街が流れる＋アイテムが流れる＋タイトル画像＋プレイ中風に動くキャラ
           drawScrollScenePanel(p, panelScene(I.ui_start_sp_scene), -performance.now() * 0.05);
           drawTitleDecoItems(p);
-          if(false&&I.title_logo?.ok){
+          if(I.title_logo?.ok){
             const lg = I.title_logo;
             const ar = lg.img.naturalHeight / lg.img.naturalWidth;
             const lw = p.w * 0.82;
