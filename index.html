@@ -2499,7 +2499,7 @@ else{
   }
 }
 /* 操作 */
-function jump(){
+function jump(){if(typeof getCountdownInfo==='function'&&getCountdownInfo())return;
   if(!running) return;
   const playerGroundY = groundY + PLAYER_GROUND_OFFSET;
   if(player.y === playerGroundY){
