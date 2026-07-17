@@ -3461,7 +3461,7 @@ if(t < comment.until && comment.text){
     const px = canvas.width/2 - pw/2;
     const py = cyT - ph/2;
     ctx.shadowColor = "rgba(60,80,110,0.2)";
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = (typeof isMobile==='function'&&isMobile()?0:10);
     ctx.shadowOffsetY = 4;
     ctx.fillStyle = "rgba(255,255,255,0.96)";
     roundRect(ctx, px, py, pw, ph, ph/2);
@@ -4371,7 +4371,7 @@ function drawTimeBadge(sec, centerY){
   const r = h * 0.5;
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.2)";
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = (typeof isMobile==='function'&&isMobile()?0:10);
   ctx.shadowOffsetY = 4;
   roundRect(ctx, x, y, w, h, r);
   ctx.fillStyle = "#ffffff";
