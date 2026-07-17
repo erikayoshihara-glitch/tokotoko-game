@@ -4197,7 +4197,7 @@ function drawSpBlankPanel(p, bg){
   const r = Math.min(p.w, p.h) * 0.06;
   ctx.save();
   ctx.shadowColor = "rgba(60,80,110,0.22)";
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = (typeof isMobile==='function'&&isMobile()?0:26);
   ctx.shadowOffsetY = 12;
   roundRect(ctx, p.x, p.y, p.w, p.h, r);
   ctx.fillStyle = "#ffffff";
@@ -4217,7 +4217,7 @@ function drawScrollScenePanel(p, imgObj, scrollX){
   const r = Math.min(p.w, p.h) * 0.06;
   ctx.save();
   ctx.shadowColor = "rgba(60,80,110,0.22)";
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = (typeof isMobile==='function'&&isMobile()?0:26);
   ctx.shadowOffsetY = 12;
   roundRect(ctx, p.x, p.y, p.w, p.h, r);
   ctx.fillStyle = "#ffffff";
@@ -4494,7 +4494,7 @@ function drawSpScenePanel(p, imgObj){
   const r = Math.min(p.w, p.h) * 0.06;
   ctx.save();
   ctx.shadowColor = "rgba(60,80,110,0.22)";
-  ctx.shadowBlur = 26;
+  ctx.shadowBlur = (typeof isMobile==='function'&&isMobile()?0:26);
   ctx.shadowOffsetY = 12;
   roundRect(ctx, p.x, p.y, p.w, p.h, r);
   ctx.fillStyle = "#ffffff";
