@@ -1078,7 +1078,7 @@ function unlockAudioOnce(){
 function inFeverNow(){
   return performance.now() < feverUntil;
 }
-const sePool = {};
+const sePool = {};var __waCtx=null,__waBuf={},__waGain=null,__waLoaded=false;function __waInit(){if(__waCtx)return __waCtx;try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;__waCtx=new AC();__waGain=__waCtx.createGain();__waGain.gain.value=1;__waGain.connect(__waCtx.destination);}catch(e){__waCtx=null;}return __waCtx;}function __waLoad(){if(__waLoaded||!__waCtx)return;__waLoaded=true;try{Object.keys(SE_SRC).forEach(function(k){fetch(SE_SRC[k]).then(function(r){return r.arrayBuffer();}).then(function(b){__waCtx.decodeAudioData(b,function(buf){__waBuf[k]=buf;},function(){});}).catch(function(){});});}catch(e){}}function __waResume(){if(__waCtx&&__waCtx.state==='suspended'){try{__waCtx.resume();}catch(e){}}}
 const activeSeList = new Set();
 function stopAllSE(){
   activeSeList.forEach((a)=>{
@@ -1092,7 +1092,7 @@ function stopAllSE(){
   });
   activeSeList.clear();
 }
-function playSE(key){if(typeof soundOn!=='undefined'&&!soundOn)return;try{var _a=sePool[key];if(!_a){if(!SE_SRC||!SE_SRC[key])return;_a=sePool[key]=new Audio(SE_SRC[key]);}try{activeSeList&&activeSeList.add(_a);}catch(e){}try{_a.currentTime=0;}catch(e){}var _pr=_a.play();if(_pr&&_pr.catch)_pr.catch(function(){});}catch(e){}return;
+function playSE(key){if(typeof soundOn!=='undefined'&&!soundOn)return;try{if(!__waCtx){__waInit();__waLoad();}__waResume();var _b=__waBuf[key];if(__waCtx&&_b){var _s=__waCtx.createBufferSource();_s.buffer=_b;_s.connect(__waGain);_s.start(0);return;}}catch(e){}if(typeof soundOn!=='undefined'&&!soundOn)return;try{var _a=sePool[key];if(!_a){if(!SE_SRC||!SE_SRC[key])return;_a=sePool[key]=new Audio(SE_SRC[key]);}try{activeSeList&&activeSeList.add(_a);}catch(e){}try{_a.currentTime=0;}catch(e){}var _pr=_a.play();if(_pr&&_pr.catch)_pr.catch(function(){});}catch(e){}return;
   if(!soundOn) return;
   const src = SE_SRC[key];
   if(!src) return;
